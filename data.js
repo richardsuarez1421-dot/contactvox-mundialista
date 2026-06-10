@@ -311,9 +311,20 @@ const CVX = (() => {
 
   // currentUser sigue en localStorage (es solo la sesión local)
   function getCurrentUser() {
-    try { return JSON.parse(localStorage.getItem('cvx2026_current_user')) || null; } catch { return null; }
+    try {
+      const user = JSON.parse(localStorage.getItem('cvx2026_current_user')) || null;
+      if (!user || !hasText(user.id) || !hasText(user.name)) {
+        localStorage.removeItem('cvx2026_current_user');
+        return null;
+      }
+      return { id: cleanText(user.id), name: cleanText(user.name), dept: cleanText(user.dept) || 'General' };
+    } catch {
+      localStorage.removeItem('cvx2026_current_user');
+      return null;
+    }
   }
   function setCurrentUser(user) {
+    if (!user || !hasText(user.id) || !hasText(user.name)) return;
     localStorage.setItem('cvx2026_current_user', JSON.stringify(user));
   }
 
@@ -327,6 +338,7 @@ const CVX = (() => {
   }
 
   async function savePronostico(userId, matchId, l, v) {
+    if (!hasText(userId) || !hasText(matchId) || userId === 'undefined' || !VALID_MATCH_IDS.has(String(matchId))) return null;
     const r = await apiPost({ action: 'savePronostico', userId, matchId, local: String(l), visita: String(v) });
     if (r) invalidateCache();
     return r;
@@ -339,6 +351,7 @@ const CVX = (() => {
   }
 
   async function saveEspecial(userId, data) {
+    if (!hasText(userId) || userId === 'undefined') return null;
     const r = await apiPost({ action: 'saveEspecial', userId,
       campeon: data.campeon || '', sub: data.sub || '',
       goleador: data.goleador || '', revelacion: data.revelacion || '' });
