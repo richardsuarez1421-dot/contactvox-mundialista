@@ -195,6 +195,66 @@ const CVX = (() => {
   let _cache = null;
   let _cacheTs = 0;
   const CACHE_TTL = 30000; // 30 segundos
+  const VALID_MATCH_IDS = new Set(MATCHES.map(m => m.id));
+
+  function hasText(value) {
+    return value !== null && value !== undefined && String(value).trim() !== '' && String(value) !== 'undefined';
+  }
+
+  function cleanText(value) {
+    return hasText(value) ? String(value).trim() : '';
+  }
+
+  function normalizeApiData(data) {
+    const usuarios = Array.isArray(data?.usuarios)
+      ? data.usuarios
+          .map(u => ({
+            id: cleanText(u?.id),
+            name: cleanText(u?.name),
+            dept: cleanText(u?.dept) || 'General',
+          }))
+          .filter(u => u.id && u.name)
+      : [];
+
+    const pronosticos = {};
+    Object.entries(data?.pronosticos || {}).forEach(([userId, matches]) => {
+      const uid = cleanText(userId);
+      if (!uid || !matches || typeof matches !== 'object') return;
+      Object.entries(matches).forEach(([matchId, p]) => {
+        const mid = cleanText(matchId);
+        if (!mid || !VALID_MATCH_IDS.has(mid) || !p) return;
+        const l = cleanText(p.l);
+        const v = cleanText(p.v);
+        if (l === '' || v === '') return;
+        if (!pronosticos[uid]) pronosticos[uid] = {};
+        pronosticos[uid][mid] = { l, v };
+      });
+    });
+
+    const resultados = {};
+    Object.entries(data?.resultados || {}).forEach(([matchId, r]) => {
+      const mid = cleanText(matchId);
+      if (!mid || (!VALID_MATCH_IDS.has(mid) && !mid.startsWith('ESP_')) || !r) return;
+      const l = cleanText(r.l);
+      const v = cleanText(r.v);
+      if (l === '' && v === '') return;
+      resultados[mid] = { l, v, visita: cleanText(r.visita) || v };
+    });
+
+    const especiales = {};
+    Object.entries(data?.especiales || {}).forEach(([userId, e]) => {
+      const uid = cleanText(userId);
+      if (!uid || !e || typeof e !== 'object') return;
+      especiales[uid] = {
+        campeon: cleanText(e.campeon),
+        sub: cleanText(e.sub),
+        goleador: cleanText(e.goleador),
+        revelacion: cleanText(e.revelacion),
+      };
+    });
+
+    return { ok: true, usuarios, pronosticos, resultados, especiales };
+  }
 
   // ── LLAMADAS AL API ────────────────────────────────────────────
 
@@ -204,7 +264,7 @@ const CVX = (() => {
       const res = await fetch(`${API_URL}?action=getAll&t=${Date.now()}`);
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || 'Error en getAll');
-      return data;
+      return normalizeApiData(data);
     } catch (err) {
       console.error('CVX apiGet error:', err);
       return null;

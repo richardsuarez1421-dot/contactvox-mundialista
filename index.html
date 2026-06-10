@@ -447,14 +447,30 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Restaurar sesión local (solo nombre/dept, no necesita red)
   const savedUser = CVX.getCurrentUser();
   if (savedUser) { currentUser = savedUser; }
+  setupReveal();
   renderGrupos();
-  await renderElim();
-  await updateUI();
-  await loadEspeciales();
-  // scroll reveal
-  const obs = new IntersectionObserver(entries => entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); }), { threshold:.1 });
-  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+  try {
+    await renderElim();
+    await updateUI();
+    await loadEspeciales();
+  } catch (err) {
+    console.error('CVX init error:', err);
+    document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
+    toast('No se pudo cargar la información en vivo. Intenta recargar.');
+  }
 });
+
+function setupReveal() {
+  const reveals = document.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window)) {
+    reveals.forEach(el => el.classList.add('visible'));
+    return;
+  }
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold:.1 });
+  reveals.forEach(el => obs.observe(el));
+}
 
 // ══ UPDATE UI ══
 async function updateUI() {
@@ -743,13 +759,14 @@ function renderRankingFromData(rk) {
   list.innerHTML = rk.map((p, i) => {
     const pos = i + 1;
     const cls = pos===1?'p1':pos===2?'p2':pos===3?'p3':'po';
-    const init = p.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+    const displayName = p.name || 'Participante';
+    const init = displayName.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
     const isMe = currentUser && p.id === currentUser.id;
     const phasePills = p.porFase
       ? Object.entries(p.porFase).filter(([,v]) => v > 0)
           .map(([k,v]) => `<span class="rk-phase-pill">${phaseLabels[k]||k} ${v}p</span>`).join('')
       : '';
-    const nameCell = `<div class="rname"><div class="ravatar">${init}</div><div>${p.name}${isMe?' 👈':''}`
+    const nameCell = `<div class="rname"><div class="ravatar">${init}</div><div>${displayName}${isMe?' 👈':''}`
       + (phasePills ? `<div class="rk-phase-bar">${phasePills}</div>` : '') + `</div></div>`;
     return `
     <div class="rk-row ${isMe?'rk-you':''}">
