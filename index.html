@@ -551,6 +551,15 @@ window.addEventListener('DOMContentLoaded', async () => {
       toast('No se pudo cargar la información en vivo. Intenta recargar.');
     }
   }
+
+  // Refresh automático cada 10 segundos
+  setInterval(async () => {
+    if (currentUser) {
+      CVX.invalidateCache();
+      await refreshAllChips();
+      await updateUI();
+    }
+  }, 10000);
 });
 
 function showSkeletonLoader() {
@@ -938,6 +947,7 @@ async function renderElim() {
   container.innerHTML = '';
 
   const fases = await CVX.getFases();
+  const equiposElim = CVX.cache?.equiposElim || [];
   let faseUsuario = {};
   let allProns = {}, resultados = {};
   if (currentUser) {
@@ -955,7 +965,20 @@ async function renderElim() {
     const faseData = fases[ph.id] || {};
     const habilitada = faseData.habilitada && !faseData.cerrada;
     const yaGuardo = faseUsuario[ph.id];
-    const matches = CVX.MATCHES_ELIM.filter(m => m.phase === ph.id);
+    let matches = CVX.MATCHES_ELIM.filter(m => m.phase === ph.id);
+
+    // Cargar nombres de equipos si están disponibles
+    matches = matches.map(m => {
+      const eq = equiposElim.find(e => e.matchId === m.id);
+      if (eq && (eq.local || eq.visit)) {
+        return {
+          ...m,
+          local: eq.local || m.local,
+          visit: eq.visit || m.visit
+        };
+      }
+      return m;
+    });
 
     const acc = document.createElement('div');
     acc.className = 'fase-acc' + (habilitada ? '' : ' locked');

@@ -165,6 +165,16 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(6,12,7,.95);
 .elim-phase-body{display:none;padding:10px 14px 14px}
 .elim-phase-body.open{display:block}
 
+/* EDICIÓN DE EQUIPOS ELIMINATORIOS */
+.equipos-edit-form{background:rgba(255,143,0,.08);border:1px solid rgba(255,143,0,.2);border-radius:10px;padding:14px;margin-bottom:14px}
+.equipos-edit-form h4{font-size:11px;letter-spacing:1px;color:var(--amber);text-transform:uppercase;font-weight:700;margin-bottom:10px}
+.eq-edit-row{display:grid;grid-template-columns:30px 1fr 8px 1fr 30px;gap:8px;align-items:center;margin-bottom:8px;font-size:11px}
+.eq-edit-row input{background:var(--dark);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter';outline:none;transition:border-color .2s}
+.eq-edit-row input:focus{border-color:var(--amber)}
+.eq-edit-vs{text-align:center;color:var(--muted);font-weight:600}
+.eq-save-btn{width:100%;background:var(--amber);color:#000;border:none;border-radius:8px;padding:8px;font-family:'Oswald';font-size:11px;font-weight:700;text-transform:uppercase;cursor:pointer;transition:all .2s}
+.eq-save-btn:hover{transform:scale(1.02);box-shadow:0 4px 12px rgba(255,143,0,.3)}
+
 /* CONTROL DE FASES */
 .fases-control-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-bottom:24px}
 .fase-control-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px}
@@ -560,7 +570,8 @@ async function renderAdminElim() {
 
     const bodyContent = !on
       ? `<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px">🔒 Fase bloqueada — habilítala arriba primero</div>`
-      : matches.map(m => buildAdminMatchRow(m, resultados, pronosticos)).join('')
+      : buildEquiposEditForm(ph.id, matches)
+        + matches.map(m => buildAdminMatchRow(m, resultados, pronosticos)).join('')
         + `<button class="save-res-btn" onclick="saveElimResults('${ph.id}')">💾 Guardar resultados — ${ph.label}</button>`;
 
     sec.innerHTML = `
@@ -637,6 +648,61 @@ async function saveElimResults(phaseId) {
   toast(`✅ ${saves.length} resultados de ${ph ? ph.label : phaseId} guardados · Ranking actualizado`);
   logActivity(`${ph ? ph.label : phaseId}: ${saves.length} resultados cargados`);
   await refresh();
+}
+
+function buildEquiposEditForm(phaseId, matches) {
+  const equiposElim = CVX.cache?.equiposElim || [];
+  const equiposByPhase = equiposElim.filter(e => e.phase === phaseId);
+
+  let html = `<div class="equipos-edit-form">
+    <div style="padding:16px 0;border-bottom:1px solid var(--border);margin-bottom:16px">
+      <h4 style="margin:0 0 12px 0;color:var(--text)">🏟️ Edición de equipos — ${CVX.PHASES.find(p => p.id === phaseId)?.label || phaseId}</h4>
+      <p style="margin:0;font-size:12px;color:var(--muted)">Ingresa los nombres de los países que jugarán en esta fase</p>
+    </div>`;
+
+  matches.forEach(m => {
+    const eq = equiposByPhase.find(e => e.matchId === m.id);
+    const localName = eq?.local || '';
+    const visitName = eq?.visit || '';
+
+    html += `<div class="eq-edit-row">
+      <input type="text" id="eq-local-${m.id}" class="eq-input" placeholder="País 1" value="${localName}">
+      <div class="eq-edit-vs">VS</div>
+      <input type="text" id="eq-visit-${m.id}" class="eq-input" placeholder="País 2" value="${visitName}">
+    </div>`;
+  });
+
+  html += `<button class="eq-save-btn" onclick="saveEquiposElim('${phaseId}')">💾 Guardar equipos — ${CVX.PHASES.find(p => p.id === phaseId)?.label || phaseId}</button></div>`;
+
+  return html;
+}
+
+async function saveEquiposElim(phaseId) {
+  const matches = CVX.MATCHES_ELIM.filter(m => m.phase === phaseId);
+  const equipos = [];
+
+  matches.forEach(m => {
+    const local = document.getElementById(`eq-local-${m.id}`)?.value.trim() || '';
+    const visit = document.getElementById(`eq-visit-${m.id}`)?.value.trim() || '';
+
+    if (local === '' && visit === '') return; // Solo guarda si hay algo
+
+    equipos.push({
+      matchId: m.id,
+      local,
+      visit
+    });
+  });
+
+  if (equipos.length === 0) {
+    toast('⚠️ No hay equipos para guardar');
+    return;
+  }
+
+  toast('⏳ Guardando equipos...');
+  await CVX.saveEquiposElim({ equipos });
+  toast(`✅ ${equipos.length} equipos guardados`);
+  logActivity(`${CVX.PHASES.find(p => p.id === phaseId)?.label || phaseId}: ${equipos.length} equipos cargados`);
 }
 
 // ══ RANKING ══

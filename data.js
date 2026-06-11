@@ -397,6 +397,12 @@ const CVX = (() => {
     return r;
   }
 
+  async function saveEquiposElim(body) {
+    const r = await apiPost({ action: 'saveEquiposElim', ...body });
+    if (r) invalidateCache();
+    return r;
+  }
+
   // ── LÓGICA DE PUNTOS ───────────────────────────────────────────
   //
   // pron: { l, v, clasifica? }   — pronóstico del usuario
@@ -557,7 +563,7 @@ const CVX = (() => {
     getUsuarios, getPronosticos, getResultados, getEspeciales,
     getFases, getFaseUsuario, buscarUsuario,
     getCurrentUser, setCurrentUser,
-    saveUsuario, savePronostico, saveResultado, saveEspecial,
+    saveUsuario, savePronostico, saveResultado, saveEspecial, saveEquiposElim,
     habilitarFase, cerrarFase,
     buildRanking,
     getCache, invalidateCache,
