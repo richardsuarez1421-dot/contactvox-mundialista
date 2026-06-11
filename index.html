@@ -496,16 +496,20 @@ window.addEventListener('DOMContentLoaded', async () => {
         await updateUI();        // refreshAllChips() rellena los pronósticos guardados
         await loadEspeciales();
       })(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000))
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 15000))
     ]);
   } catch (err) {
     console.error('CVX init error:', err);
     document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
-    if (err.message === 'Timeout') {
-      toast('⚠️ Error de conexión. Intenta recargar la página.');
-    } else {
-      toast('No se pudo cargar la información en vivo. Intenta recargar.');
-    }
+    const errHtml = `<div style="text-align:center;padding:32px 16px;color:var(--muted)">
+      <div style="font-size:28px;margin-bottom:12px">📡</div>
+      <div style="font-size:14px;margin-bottom:16px">Sin conexión con el servidor.<br>Verifica tu internet e intenta de nuevo.</div>
+      <button onclick="window.location.reload()" style="background:var(--verde);color:#000;border:none;border-radius:8px;padding:10px 24px;font-size:13px;font-weight:700;cursor:pointer">↺ Recargar</button>
+    </div>`;
+    ['grupos-container','ranking-list','user-banner-area'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = errHtml;
+    });
   }
 
   // Refresh automático con jitter (25-40 s) para que los clientes no golpeen
@@ -589,11 +593,11 @@ async function updateUI() {
 // ══ RENDER GRUPOS — VISTA CALENDARIO ══
 async function renderGrupos() {
   const container = document.getElementById('grupos-container');
-  container.innerHTML = '';
 
   const [fases, resultados, pronosticos, bloqueados] = await Promise.all([
     CVX.getFases(), CVX.getResultados(), CVX.getPronosticos(), CVX.getBloqueados()
   ]);
+  container.innerHTML = '';
   const faseGrupo = fases.grupo || {};
   const faseBloqueada = faseGrupo.cerrada || !faseGrupo.habilitada;
   const userProns = (currentUser && pronosticos[currentUser.id]) || {};
@@ -771,6 +775,27 @@ function _getClasifica(matchId) {
 
 async function saveMatch(matchId, fase) {
   if (!currentUser) { toast('⚠️ Inicia sesión primero'); openLogin(); return; }
+
+  // Re-validate lock server-side — never trust UI state alone
+  const [fasesChk, bloqueadosChk] = await Promise.all([CVX.getFases(), CVX.getBloqueados()]);
+  const faseDataChk = fasesChk[fase] || {};
+  if (faseDataChk.cerrada || !faseDataChk.habilitada) { toast('🔒 Esta fase está cerrada'); return; }
+  const mChk = CVX.MATCHES.find(x => x.id === matchId);
+  if (mChk) {
+    const kMs = mChk.kickoff ? new Date(mChk.kickoff).getTime() : null;
+    const override = bloqueadosChk[matchId];
+    const locked = override === true ? true : (override === false ? false : (kMs && Date.now() >= kMs));
+    if (locked) {
+      toast('🔒 Este partido ya inició, no se puede guardar');
+      const inpL = document.getElementById(`pl-${matchId}`);
+      const inpV = document.getElementById(`pv-${matchId}`);
+      if (inpL) { inpL.disabled = true; inpL.style.opacity = '.6'; inpL.style.cursor = 'not-allowed'; }
+      if (inpV) { inpV.disabled = true; inpV.style.opacity = '.6'; inpV.style.cursor = 'not-allowed'; }
+      const btnArea = document.getElementById(`btn-area-${matchId}`);
+      if (btnArea) btnArea.innerHTML = `<button class="match-save-btn saved" disabled>🔒 Iniciado</button>`;
+      return;
+    }
+  }
 
   const l = document.getElementById(`pl-${matchId}`)?.value ?? '';
   const v = document.getElementById(`pv-${matchId}`)?.value ?? '';
