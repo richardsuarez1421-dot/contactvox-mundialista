@@ -1,35 +1,40 @@
 // ================================================================
-// Copa Mundial Contactvox 2026 — Data Layer v3 (Google Sheets)
+// Copa Mundial Contactvox 2026 — Data Layer v4 (Google Sheets)
 // ================================================================
 // Conectado a Google Sheets via Apps Script Web App.
 // El diseño de index.html y admin.html no cambia en absoluto.
 //
-// SISTEMA DE PUNTOS:
+// SISTEMA DE PUNTOS v4:
 // ── FASE DE GRUPOS ──────────────────────────────────────────────
 //   Marcador exacto                                        → 5 pts
-//   Ganador correcto + diferencia de goles exacta          → 4 pts
-//   Solo ganador o empate correcto                         → 2 pts
+//   Ganador o empate correcto                              → 2 pts
 //   Ningún acierto                                         → 0 pts
+//   (Se elimina el bonus por diferencia de goles)
 //
 // ── OCTAVOS ─────────────────────────────────────────────────────
-//   Marcador exacto en 90 min                              → 8 pts
-//   Clasificado correcto                                   → 4 pts
+//   Marcador exacto + clasificado correcto                 → 6 pts
+//   Solo clasificado correcto                              → 3 pts
 //
 // ── CUARTOS ─────────────────────────────────────────────────────
-//   Marcador exacto en 90 min                              → 10 pts
-//   Clasificado correcto                                   → 5 pts
+//   Marcador exacto + clasificado correcto                 → 8 pts
+//   Solo clasificado correcto                              → 4 pts
 //
 // ── SEMIFINALES ─────────────────────────────────────────────────
-//   Marcador exacto en 90 min                              → 12 pts
-//   Clasificado correcto                                   → 6 pts
+//   Marcador exacto + clasificado correcto                 → 10 pts
+//   Solo clasificado correcto                              → 5 pts
 //
 // ── TERCER PUESTO ───────────────────────────────────────────────
-//   Marcador exacto                                        → 8 pts
-//   Ganador correcto                                       → 4 pts
+//   Marcador exacto + clasificado correcto                 → 8 pts
+//   Solo clasificado correcto                              → 4 pts
 //
 // ── GRAN FINAL ──────────────────────────────────────────────────
-//   Marcador exacto en 90 min                              → 15 pts
-//   Campeón correcto                                       → 8 pts
+//   Marcador exacto + clasificado correcto                 → 15 pts
+//   Solo clasificado correcto (campeón)                    → 8 pts
+//
+// ── LÓGICA DE PENALES ───────────────────────────────────────────
+//   Si el marcador global final es empate, el campo
+//   `clasifica` ('local'|'visit') determina quién avanzó.
+//   Se evalúa el marcador GLOBAL FINAL (incluye prórroga/penales).
 //
 // ── PREDICCIONES ESPECIALES ─────────────────────────────────────
 //   Campeón del mundo → 10 pts  |  Subcampeón      → 6 pts
@@ -43,13 +48,30 @@ const CVX = (() => {
 
   // ── TABLA DE PUNTOS POR FASE ──────────────────────────────────
   const PUNTOS = {
-    grupo:   { exacto: 5, ganadorDiff: 4, ganador: 2, fallo: 0 },
-    octavos: { exacto: 8, clasificado: 4, fallo: 0 },
-    cuartos: { exacto: 10, clasificado: 5, fallo: 0 },
-    semis:   { exacto: 12, clasificado: 6, fallo: 0 },
-    tercero: { exacto: 8,  ganador: 4,  fallo: 0 },
-    final:   { exacto: 15, ganador: 8,  fallo: 0 },
+    grupo:   { exacto: 5, ganador: 2, fallo: 0 },
+    octavos: { exacto: 6, clasificado: 3, fallo: 0 },
+    cuartos: { exacto: 8, clasificado: 4, fallo: 0 },
+    semis:   { exacto: 10, clasificado: 5, fallo: 0 },
+    tercero: { exacto: 8,  clasificado: 4, fallo: 0 },
+    final:   { exacto: 15, clasificado: 8, fallo: 0 },
   };
+
+  // ── SEMANAS DEL TORNEO ─────────────────────────────────────────
+  const SEMANAS = [
+    { id:1, label:'Semana 1', inicio:'2026-06-11', fin:'2026-06-17' },
+    { id:2, label:'Semana 2', inicio:'2026-06-18', fin:'2026-06-24' },
+    { id:3, label:'Semana 3', inicio:'2026-06-25', fin:'2026-07-01' },
+    { id:4, label:'Semana 4', inicio:'2026-07-02', fin:'2026-07-08' },
+    { id:5, label:'Semana 5', inicio:'2026-07-09', fin:'2026-07-15' },
+    { id:6, label:'Semana 6', inicio:'2026-07-16', fin:'2026-07-19' },
+  ];
+
+  // ── ÁREAS DE LA EMPRESA ────────────────────────────────────────
+  const AREAS = [
+    'Soporte','Seguridades','Desarrollo','Diseño','QA',
+    'Proyectos','Gerencia','Comercial','Recursos Humanos',
+    'Innovación','Coordinación'
+  ];
 
   // ── PARTIDOS FASE DE GRUPOS (72 partidos) ─────────────────────
   const MATCHES_GRUPOS = [
@@ -191,7 +213,6 @@ const CVX = (() => {
   };
 
   // ── CACHÉ LOCAL (evita llamadas repetidas al API) ──────────────
-  // Se refresca cada vez que la página carga o el usuario guarda algo.
   let _cache = null;
   let _cacheTs = 0;
   const CACHE_TTL = 30000; // 30 segundos
@@ -227,7 +248,7 @@ const CVX = (() => {
         const v = cleanText(p.v);
         if (l === '' || v === '') return;
         if (!pronosticos[uid]) pronosticos[uid] = {};
-        pronosticos[uid][mid] = { l, v };
+        pronosticos[uid][mid] = { l, v, clasifica: cleanText(p.clasifica) || '', fase: cleanText(p.fase) || '' };
       });
     });
 
@@ -238,7 +259,7 @@ const CVX = (() => {
       const l = cleanText(r.l);
       const v = cleanText(r.v);
       if (l === '' && v === '') return;
-      resultados[mid] = { l, v, visita: cleanText(r.visita) || v };
+      resultados[mid] = { l, v, visita: cleanText(r.visita) || v, clasifica: cleanText(r.clasifica) || '' };
     });
 
     const especiales = {};
@@ -253,12 +274,20 @@ const CVX = (() => {
       };
     });
 
-    return { ok: true, usuarios, pronosticos, resultados, especiales };
+    // Fases (estado de habilitación/cierre por el admin)
+    const fases = data?.fases || { grupo:{}, octavos:{}, cuartos:{}, semis:{}, tercero:{}, final:{} };
+
+    // Equipos eliminatorios (nombres editables para las fases elim)
+    const equiposElim = data?.equiposElim || {};
+
+    // Premios semanales (opcional)
+    const premiosSemanales = Array.isArray(data?.premiosSemanales) ? data.premiosSemanales : [];
+
+    return { ok: true, usuarios, pronosticos, resultados, especiales, fases, equiposElim, premiosSemanales };
   }
 
   // ── LLAMADAS AL API ────────────────────────────────────────────
 
-  // GET — trae todos los datos de una vez (usuarios, pronósticos, resultados, especiales)
   async function apiGet() {
     try {
       const res = await fetch(`${API_URL}?action=getAll&t=${Date.now()}`);
@@ -271,9 +300,6 @@ const CVX = (() => {
     }
   }
 
-  // POST — guarda un registro
-  // Apps Script recibe Content-Type: text/plain con body JSON
-  // para evitar el preflight CORS de application/json
   async function apiPost(payload) {
     try {
       const res = await fetch(API_URL, {
@@ -297,19 +323,26 @@ const CVX = (() => {
     if (!forceRefresh && _cache && (now - _cacheTs) < CACHE_TTL) return _cache;
     const fresh = await apiGet();
     if (fresh) { _cache = fresh; _cacheTs = now; }
-    return _cache || { usuarios: [], pronosticos: {}, resultados: {}, especiales: {} };
+    return _cache || {
+      usuarios: [],
+      pronosticos: {},
+      resultados: {},
+      especiales: {},
+      fases: { grupo:{}, octavos:{}, cuartos:{}, semis:{}, tercero:{}, final:{} },
+      equiposElim: {},
+      premiosSemanales: []
+    };
   }
 
   function invalidateCache() { _cache = null; _cacheTs = 0; }
 
-  // ── GETTERS (usan caché, devuelven Promises) ───────────────────
+  // ── GETTERS ────────────────────────────────────────────────────
 
   async function getUsuarios()    { return (await getCache()).usuarios    || []; }
   async function getPronosticos() { return (await getCache()).pronosticos || {}; }
   async function getResultados()  { return (await getCache()).resultados  || {}; }
   async function getEspeciales()  { return (await getCache()).especiales  || {}; }
 
-  // currentUser sigue en localStorage (es solo la sesión local)
   function getCurrentUser() {
     try {
       const user = JSON.parse(localStorage.getItem('cvx2026_current_user')) || null;
@@ -328,7 +361,7 @@ const CVX = (() => {
     localStorage.setItem('cvx2026_current_user', JSON.stringify(user));
   }
 
-  // ── SETTERS (escriben en Sheets y refrescan caché) ─────────────
+  // ── SETTERS ────────────────────────────────────────────────────
 
   async function saveUsuario(user) {
     if (!user.id || !user.name) return null;
@@ -337,15 +370,20 @@ const CVX = (() => {
     return r;
   }
 
-  async function savePronostico(userId, matchId, l, v) {
+  // Nueva firma: savePronostico(userId, matchId, l, v, fase, clasifica)
+  // clasifica: 'local' | 'visit' | '' — solo para eliminatorias con empate
+  async function savePronostico(userId, matchId, l, v, fase, clasifica) {
     if (!hasText(userId) || !hasText(matchId) || userId === 'undefined' || !VALID_MATCH_IDS.has(String(matchId))) return null;
-    const r = await apiPost({ action: 'savePronostico', userId, matchId, local: String(l), visita: String(v) });
+    const payload = { action: 'savePronostico', userId, matchId, local: String(l), visita: String(v), fase: String(fase || ''), clasifica: String(clasifica || '') };
+    const r = await apiPost(payload);
     if (r) invalidateCache();
     return r;
   }
 
-  async function saveResultado(matchId, l, v) {
-    const r = await apiPost({ action: 'saveResultado', matchId, local: String(l), visita: String(v) });
+  // clasifica: 'local' | 'visit' | '' — solo cuando l === v en eliminatoria
+  async function saveResultado(matchId, l, v, clasifica) {
+    const payload = { action: 'saveResultado', matchId, local: String(l), visita: String(v), clasifica: String(clasifica || '') };
+    const r = await apiPost(payload);
     if (r) invalidateCache();
     return r;
   }
@@ -359,7 +397,21 @@ const CVX = (() => {
     return r;
   }
 
+  async function saveEquiposElim(body) {
+    const r = await apiPost({ action: 'saveEquiposElim', ...body });
+    if (r) invalidateCache();
+    return r;
+  }
+
   // ── LÓGICA DE PUNTOS ───────────────────────────────────────────
+  //
+  // pron: { l, v, clasifica? }   — pronóstico del usuario
+  // res:  { l, v, clasifica? }   — resultado oficial
+  // phase: string
+  //
+  // En grupos, el empate es resultado válido → ganador = 'E'.
+  // En eliminatoria, si l === v, se usa .clasifica para saber quién avanzó.
+  // El marcador evaluado es el GLOBAL FINAL (incluye prórroga/penales).
 
   function calcPoints(pron, res, phase) {
     if (!res || res.l === '' || res.l === null || res.l === undefined)
@@ -371,34 +423,49 @@ const CVX = (() => {
     const rl = parseInt(res.l),  rv = parseInt(res.v);
     const P  = PUNTOS[phase] || PUNTOS.grupo;
 
-    // ── Grupos: empate posible ──
+    // ── FASE DE GRUPOS ──────────────────────────────────────────
     if (phase === 'grupo') {
       if (pl === rl && pv === rv)
         return { pts: P.exacto, label: 'exacto',
           detalle: `⚡ Marcador exacto ${rl}-${rv} → +${P.exacto} pts` };
       const pronWin = pl > pv ? 'L' : pl < pv ? 'V' : 'E';
       const realWin = rl > rv ? 'L' : rl < rv ? 'V' : 'E';
-      if (pronWin === realWin) {
-        if ((pl - pv) === (rl - rv))
-          return { pts: P.ganadorDiff, label: 'ganador_diff',
-            detalle: `✓ Ganador + diferencia (${rl}-${rv}) → +${P.ganadorDiff} pts` };
+      if (pronWin === realWin)
         return { pts: P.ganador, label: 'ganador',
           detalle: `✓ Ganador correcto (${rl}-${rv}) → +${P.ganador} pts` };
-      }
       return { pts: 0, label: 'fallo',
         detalle: `✗ Incorrecto (salió ${rl}-${rv}) → 0 pts` };
     }
 
-    // ── Eliminatorias ──
-    if (pl === rl && pv === rv)
+    // ── ELIMINATORIA ────────────────────────────────────────────
+    // 1) Quién clasificó realmente
+    let realClasifica;
+    if (rl !== rv) {
+      realClasifica = rl > rv ? 'local' : 'visit';
+    } else {
+      // Empate en marcador global → necesitamos el campo clasifica del resultado
+      realClasifica = res.clasifica || 'local';
+    }
+
+    // 2) Quién clasifica según el pronóstico
+    let pronClasifica;
+    if (pl !== pv) {
+      pronClasifica = pl > pv ? 'local' : 'visit';
+    } else {
+      // Pronóstico empatado → necesitamos el campo clasifica del pronóstico
+      pronClasifica = pron.clasifica || 'local';
+    }
+
+    // 3) Evaluar
+    const exactoMarcador  = (pl === rl && pv === rv);
+    const aciertaClasifica = (pronClasifica === realClasifica);
+
+    if (exactoMarcador && aciertaClasifica)
       return { pts: P.exacto, label: 'exacto',
-        detalle: `⚡ Marcador exacto ${rl}-${rv} → +${P.exacto} pts` };
-    const pronWin = pl >= pv ? 'L' : 'V';
-    const realWin = rl >= rv ? 'L' : 'V';
-    const ptsParcial = P.clasificado || P.ganador || 0;
-    if (pronWin === realWin)
-      return { pts: ptsParcial, label: 'clasificado',
-        detalle: `✓ Clasificado correcto (${rl}-${rv}) → +${ptsParcial} pts` };
+        detalle: `⚡ Marcador exacto ${rl}-${rv} + clasificado correcto → +${P.exacto} pts` };
+    if (aciertaClasifica)
+      return { pts: P.clasificado, label: 'clasificado',
+        detalle: `✓ Clasificado correcto (${rl}-${rv}) → +${P.clasificado} pts` };
     return { pts: 0, label: 'fallo',
       detalle: `✗ Clasificado incorrecto (salió ${rl}-${rv}) → 0 pts` };
   }
@@ -416,9 +483,9 @@ const CVX = (() => {
     return pts;
   }
 
-  // ── RANKING (async porque lee de Sheets) ──────────────────────
+  // ── RANKING ────────────────────────────────────────────────────
   async function buildRanking() {
-    const data = await getCache(true); // siempre fresco para el ranking
+    const data = await getCache(true);
     const { usuarios, pronosticos, resultados, especiales } = data;
 
     return (usuarios || []).map(u => {
@@ -434,9 +501,9 @@ const CVX = (() => {
         const r = calcPoints(pron, res, m.phase);
         pts += r.pts;
         porFase[m.phase] = (porFase[m.phase] || 0) + r.pts;
-        if (r.label === 'exacto')                                           exactos++;
-        if (['clasificado','ganador','ganador_diff'].includes(r.label))     clasificados++;
-        if (r.label === 'fallo')                                            fallos++;
+        if (r.label === 'exacto')                                        exactos++;
+        if (['clasificado','ganador'].includes(r.label))                 clasificados++;
+        if (r.label === 'fallo')                                         fallos++;
       });
 
       const espPts = calcEspeciales((especiales || {})[u.id], resultados);
@@ -446,16 +513,175 @@ const CVX = (() => {
     }).sort((a, b) => b.pts - a.pts || b.exactos - a.exactos || b.clasificados - a.clasificados);
   }
 
+  // ── FASES ──────────────────────────────────────────────────────
+  async function getFases() {
+    const data = await getCache();
+    return data.fases || { grupo:{}, octavos:{}, cuartos:{}, semis:{}, tercero:{}, final:{} };
+  }
+
+  async function habilitarFase(fase) {
+    const r = await apiPost({ action: 'habilitarFase', fase });
+    if (r) invalidateCache();
+    return r;
+  }
+
+  async function cerrarFase(fase) {
+    const r = await apiPost({ action: 'cerrarFase', fase });
+    if (r) invalidateCache();
+    return r;
+  }
+
+  // getFaseUsuario(userId) — devuelve qué fases el usuario ya pronosticó
+  // Resultado: { grupo: true, octavos: false, ... }
+  async function getFaseUsuario(userId) {
+    const prons = await getPronosticos();
+    const userProns = (prons || {})[userId] || {};
+    const out = { grupo: false, octavos: false, cuartos: false, semis: false, tercero: false, final: false };
+    const fasesPronosticadas = new Set();
+    Object.entries(userProns).forEach(([mid, p]) => {
+      // Usa la fase guardada; si falta (datos antiguos), la infiere del partido
+      let fase = p.fase;
+      if (!fase) { const m = MATCHES.find(x => x.id === mid); fase = m ? m.phase : ''; }
+      if (fase) fasesPronosticadas.add(fase);
+    });
+    PHASES.forEach(ph => { out[ph.id] = fasesPronosticadas.has(ph.id); });
+    return out;
+  }
+
+  // ── BÚSQUEDA DE USUARIOS ────────────────────────────────────────
+  async function buscarUsuario(nombre) {
+    if (!nombre || !nombre.trim()) return [];
+    const q = nombre.trim().toLowerCase();
+    const usuarios = await getUsuarios();
+    return usuarios
+      .filter(u => (u.name || '').toLowerCase().indexOf(q) !== -1)
+      .slice(0, 5);
+  }
+
+  // ── CUADRO ELIMINATORIO AUTOMÁTICO ─────────────────────────────
+  // Normaliza nombres de equipos que aparecen escritos distinto.
+  const TEAM_ALIAS = {
+    'Bosnia y Herz.': 'Bosnia y Herzegovina',
+  };
+  function normTeam(t) { const s = cleanText(t); return TEAM_ALIAS[s] || s; }
+
+  // Tabla de posiciones de un grupo a partir de los resultados.
+  function groupStandings(groupLetter, resultados) {
+    const ms = MATCHES_GRUPOS.filter(m => m.group === groupLetter);
+    const table = {};
+    const ensure = t => { if (!table[t]) table[t] = { team: t, pts: 0, gf: 0, ga: 0, gd: 0, pj: 0 }; return table[t]; };
+    let jugados = 0;
+    ms.forEach(m => {
+      const r = (resultados || {})[m.id];
+      if (!r || r.l === '' || r.l === undefined || r.l === null) return;
+      const l = parseInt(r.l), v = parseInt(r.v);
+      if (isNaN(l) || isNaN(v)) return;
+      jugados++;
+      const A = ensure(normTeam(m.local)), B = ensure(normTeam(m.visit));
+      A.pj++; B.pj++; A.gf += l; A.ga += v; B.gf += v; B.ga += l;
+      if (l > v) A.pts += 3; else if (v > l) B.pts += 3; else { A.pts++; B.pts++; }
+    });
+    Object.values(table).forEach(t => t.gd = t.gf - t.ga);
+    const sorted = Object.values(table).sort((a, b) =>
+      b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.team.localeCompare(b.team));
+    return { allPlayed: jugados === ms.length, sorted };
+  }
+
+  // Ganador de un partido eliminatorio ya con nombres resueltos.
+  function elimWinner(localName, visitName, res) {
+    if (!res || res.l === '' || res.l === undefined || res.l === null) return null;
+    const l = parseInt(res.l), v = parseInt(res.v);
+    if (isNaN(l) || isNaN(v)) return null;
+    if (l > v) return { win: localName, lose: visitName };
+    if (v > l) return { win: visitName, lose: localName };
+    // Empate → se usa clasifica (penales)
+    if (res.clasifica === 'local') return { win: localName, lose: visitName };
+    if (res.clasifica === 'visit') return { win: visitName, lose: localName };
+    return null;
+  }
+
+  // Construye el cuadro eliminatorio completo (nombres por matchId) usando
+  // la lógica del mundial: 1°/2° de grupo + 8 mejores terceros en octavos, y
+  // avance de ganadores en las rondas siguientes. Devuelve { matchId: {local, visit} }
+  // solo para los partidos cuyos equipos ya quedaron determinados.
+  function computeBracket(resultados) {
+    const out = {};
+    const resolved = {}; // matchId -> { local, visit } (nombres reales o etiqueta original)
+
+    // 1) Posiciones por grupo
+    const standings = {};
+    const tercerosCompletos = [];
+    GROUPS.forEach(g => {
+      const st = groupStandings(g, resultados);
+      standings[g] = st;
+      if (st.allPlayed && st.sorted[2]) {
+        tercerosCompletos.push({ group: g, ...st.sorted[2] });
+      }
+    });
+    // 8 mejores terceros (solo de grupos completos)
+    const mejoresTerceros = tercerosCompletos.sort((a, b) =>
+      b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.team.localeCompare(b.team));
+
+    // Resuelve una etiqueta tipo "1° Grupo A" / "2° Grupo B" / "3° mejor 3"
+    function resolveGroupLabel(label) {
+      let mm = label.match(/^1° Grupo ([A-L])$/);
+      if (mm) { const st = standings[mm[1]]; return (st && st.allPlayed && st.sorted[0]) ? st.sorted[0].team : null; }
+      mm = label.match(/^2° Grupo ([A-L])$/);
+      if (mm) { const st = standings[mm[1]]; return (st && st.allPlayed && st.sorted[1]) ? st.sorted[1].team : null; }
+      mm = label.match(/^3° mejor (\d)$/);
+      if (mm) { const idx = parseInt(mm[1]) - 1; return mejoresTerceros[idx] ? mejoresTerceros[idx].team : null; }
+      return null;
+    }
+
+    // Resuelve "Gan. X" o "Per. X" usando los nombres ya resueltos de X
+    function resolveElimRef(label) {
+      let mm = label.match(/^Gan\. ([A-Z0-9]+)$/);
+      if (mm) {
+        const ref = mm[1]; const nm = resolved[ref];
+        if (!nm || !nm.local || !nm.visit) return null;
+        const w = elimWinner(nm.local, nm.visit, (resultados || {})[ref]);
+        return w ? w.win : null;
+      }
+      mm = label.match(/^Per\. ([A-Z0-9]+)$/);
+      if (mm) {
+        const ref = mm[1]; const nm = resolved[ref];
+        if (!nm || !nm.local || !nm.visit) return null;
+        const w = elimWinner(nm.local, nm.visit, (resultados || {})[ref]);
+        return w ? w.lose : null;
+      }
+      return null;
+    }
+
+    // Procesa los partidos en orden de fase (octavos→cuartos→semis→tercero→final)
+    const phaseOrder = ['octavos', 'cuartos', 'semis', 'tercero', 'final'];
+    phaseOrder.forEach(phase => {
+      MATCHES_ELIM.filter(m => m.phase === phase).forEach(m => {
+        const localReal = resolveGroupLabel(m.local) || resolveElimRef(m.local);
+        const visitReal = resolveGroupLabel(m.visit) || resolveElimRef(m.visit);
+        resolved[m.id] = { local: localReal || m.local, visit: visitReal || m.visit };
+        // Solo guardamos lo que realmente quedó determinado
+        if (localReal || visitReal) {
+          out[m.id] = { local: localReal || '', visit: visitReal || '' };
+        }
+      });
+    });
+
+    return out;
+  }
+
   // ── API PÚBLICA ────────────────────────────────────────────────
   return {
     MATCHES, MATCHES_GRUPOS, MATCHES_ELIM,
-    GROUPS, PHASES, FLAGS, PUNTOS,
+    GROUPS, PHASES, FLAGS, PUNTOS, SEMANAS, AREAS,
     calcPoints, calcEspeciales,
     getUsuarios, getPronosticos, getResultados, getEspeciales,
+    getFases, getFaseUsuario, buscarUsuario,
     getCurrentUser, setCurrentUser,
-    saveUsuario, savePronostico, saveResultado, saveEspecial,
-    buildRanking,
+    saveUsuario, savePronostico, saveResultado, saveEspecial, saveEquiposElim,
+    habilitarFase, cerrarFase,
+    buildRanking, computeBracket, groupStandings,
     getCache, invalidateCache,
+    get cache() { return _cache; },
   };
 
 })();

@@ -136,11 +136,18 @@ h2.stitle{font-family:'Bebas Neue';font-size:clamp(30px,5vw,50px);letter-spacing
 .result-chip{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.5px;padding:2px 8px;border-radius:50px;margin-top:5px}
 .rc-exact{background:rgba(0,200,83,.18);color:var(--verde);border:1px solid var(--verde)}
 .rc-winner{background:rgba(255,215,0,.14);color:var(--oro);border:1px solid var(--oro)}
-.rc-diff{background:rgba(0,200,83,.1);color:#69f0ae;border:1px solid rgba(0,200,83,.4)}
 .rc-miss{background:rgba(255,23,68,.12);color:#ff6b6b;border:1px solid rgba(255,23,68,.4)}
 .rc-pending{background:rgba(255,255,255,.05);color:var(--muted);border:1px solid var(--border)}
 .res-oficial{font-size:10px;color:var(--muted);margin-top:6px}
 .res-oficial strong{color:var(--verde)}
+
+/* ── CAMPO CLASIFICA (eliminatoria) ── */
+.clasifica-field{margin-top:7px;padding:6px 10px;background:rgba(0,200,83,.06);border:1px solid rgba(0,200,83,.15);border-radius:8px}
+.clasifica-label{font-size:9px;letter-spacing:1.5px;color:var(--verde);text-transform:uppercase;font-weight:700;margin-bottom:5px}
+.clasifica-opts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.clasifica-opts label{display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;color:#c8e6c9}
+.clasifica-opts input[type=radio]{accent-color:var(--verde)}
+.clasifica-warn{font-size:10px;color:#ff6b6b;margin-top:4px;display:none}
 
 /* Save btn per group */
 .save-group-btn{margin-top:12px;width:100%;background:var(--verde);color:#000;border:none;border-radius:10px;padding:10px;font-family:'Oswald';font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:transform .15s,box-shadow .15s}
@@ -233,6 +240,13 @@ footer .fg{color:var(--verde);font-weight:600}
 /* ── RANKING porFase breakdown ── */
 .rk-phase-bar{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
 .rk-phase-pill{font-size:9px;background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.2);border-radius:50px;padding:1px 7px;color:#69f0ae;white-space:nowrap}
+
+/* ── SKELETON LOADER ── */
+.skeleton{background:linear-gradient(90deg,var(--card) 25%,var(--card2) 50%,var(--card) 75%);background-size:200% 100%;animation:loading 1.5s infinite;border-radius:8px}
+@keyframes loading{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skeleton-card{height:100px;margin-bottom:10px}
+.skeleton-text{height:16px;margin-bottom:8px}
+.skeleton-text.short{width:60%}
 </style>
 </head>
 <body>
@@ -252,7 +266,7 @@ footer .fg{color:var(--verde);font-weight:600}
   </div>
 </div>
 
-<!-- ══ LOGIN MODAL ══ -->
+<!-- ══ REGISTRO INTELIGENTE MODAL ══ -->
 <div id="login-modal">
   <div class="modal-box">
     <h3>⚽ Ingresar al torneo</h3>
@@ -288,10 +302,6 @@ footer .fg{color:var(--verde);font-weight:600}
         <option>Thalia Ortega</option>
         <option>Verónica Bermúdez</option>
       </select>
-    </div>
-    <div style="display:flex;gap:10px;margin-top:6px">
-      <button class="btn-o" style="flex:1;padding:11px" onclick="closeLogin()">Cancelar</button>
-      <button class="btn-p" style="flex:1;padding:11px" onclick="doLogin()">Entrar ⚽</button>
     </div>
   </div>
 </div>
@@ -339,15 +349,15 @@ footer .fg{color:var(--verde);font-weight:600}
     <div class="score-card">
       <h3>⚽ Fase de Grupos</h3>
       <div class="srow"><span class="desc">Marcador exacto (ej: 2-1 correcto)</span><span class="sbadge">5 pts</span></div>
-      <div class="srow"><span class="desc">Ganador + diferencia de goles</span><span class="sbadge">4 pts</span></div>
       <div class="srow"><span class="desc">Ganador o empate correcto</span><span class="sbadge">2 pts</span></div>
+      <div class="srow"><span class="desc">Fallo</span><span class="sbadge">0 pts</span></div>
     </div>
     <div class="score-card">
       <h3>🏆 Fases Eliminatorias</h3>
-      <div class="srow"><span class="desc">🔟 Octavos: exacto / clasificado</span><span class="sbadge">8 / 4</span></div>
-      <div class="srow"><span class="desc">🏅 Cuartos: exacto / clasificado</span><span class="sbadge">10 / 5</span></div>
-      <div class="srow"><span class="desc">🌟 Semis: exacto / clasificado</span><span class="sbadge">12 / 6</span></div>
-      <div class="srow"><span class="desc">🥉 3er Puesto: exacto / ganador</span><span class="sbadge">8 / 4</span></div>
+      <div class="srow"><span class="desc">🔟 Octavos: exacto / clasificado</span><span class="sbadge">6 / 3</span></div>
+      <div class="srow"><span class="desc">🏅 Cuartos: exacto / clasificado</span><span class="sbadge">8 / 4</span></div>
+      <div class="srow"><span class="desc">🌟 Semis: exacto / clasificado</span><span class="sbadge">10 / 5</span></div>
+      <div class="srow"><span class="desc">🥉 3er Puesto: exacto / clasificado</span><span class="sbadge">8 / 4</span></div>
       <div class="srow"><span class="desc">🏆 Final: exacto / campeón</span><span class="sbadge">15 / 8</span></div>
     </div>
   </div>
@@ -369,14 +379,15 @@ footer .fg{color:var(--verde);font-weight:600}
     <div style="margin-top:32px">
       <div class="stag" style="margin-bottom:10px">Predicciones especiales</div>
       <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Predice antes del inicio — puntos adicionales si aciertas.</p>
-      <div class="esp-grid">
+      <div id="esp-locked-msg" style="display:none;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;color:var(--muted);font-size:13px;margin-bottom:16px">🔒 Las predicciones especiales aún no están habilitadas. El administrador las abrirá pronto.</div>
+      <div class="esp-grid" id="esp-grid">
         <div class="esp-card"><span class="esp-label">🏆 Campeón del mundo</span><input id="esp-campeon" type="text" placeholder="Ej: Argentina" /></div>
         <div class="esp-card"><span class="esp-label">🥈 Subcampeón</span><input id="esp-sub" type="text" placeholder="Ej: Francia" /></div>
         <div class="esp-card"><span class="esp-label">👟 Goleador del torneo</span><input id="esp-gol" type="text" placeholder="Ej: Mbappé" /></div>
         <div class="esp-card"><span class="esp-label">⭐ Selección revelación</span><input id="esp-rev" type="text" placeholder="Ej: Marruecos" /></div>
       </div>
       <div style="text-align:center;margin-top:20px">
-        <button class="btn-p" onclick="saveEspeciales()">💾 Guardar predicciones especiales</button>
+        <button class="btn-p" id="esp-save-btn" onclick="saveEspeciales()">💾 Guardar predicciones especiales</button>
       </div>
     </div>
   </div>
@@ -428,7 +439,7 @@ footer .fg{color:var(--verde);font-weight:600}
 
 <div id="toast"></div>
 
-<script src="data.js?v=f912247"></script>
+<script src="data.js?v=v6bracket"></script>
 <script>
 // ══ STATE ══
 let currentUser = null;
@@ -460,28 +471,76 @@ async function doLogin() {
   }
   CVX.setCurrentUser(currentUser);
   closeLogin();
+  await renderGrupos();
+  await renderElim();
   await updateUI();
+  await loadEspeciales();
   toast(`¡Bienvenido/a ${currentUser.name}! ⚽`);
   confetti();
 }
 
 // ══ INIT ══
 window.addEventListener('DOMContentLoaded', async () => {
-  // Restaurar sesión local (solo nombre/dept, no necesita red)
   const savedUser = CVX.getCurrentUser();
   if (savedUser) { currentUser = savedUser; }
   setupReveal();
-  renderGrupos();
+  showSkeletonLoader();
+
   try {
-    await renderElim();
-    await updateUI();
-    await loadEspeciales();
+    await Promise.race([
+      (async () => {
+        const _f0 = await CVX.getFases();
+        window._faseSig = JSON.stringify({ fases: _f0, equiposElim: (CVX.cache && CVX.cache.equiposElim) || {} });
+        await renderGrupos();
+        await renderElim();
+        await updateUI();        // refreshAllChips() rellena los pronósticos guardados
+        await loadEspeciales();
+      })(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000))
+    ]);
   } catch (err) {
     console.error('CVX init error:', err);
     document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
-    toast('No se pudo cargar la información en vivo. Intenta recargar.');
+    if (err.message === 'Timeout') {
+      toast('⚠️ Error de conexión. Intenta recargar la página.');
+    } else {
+      toast('No se pudo cargar la información en vivo. Intenta recargar.');
+    }
   }
+
+  // Refresh automático cada 10 segundos
+  setInterval(async () => {
+    CVX.invalidateCache();
+    // Si cambió el estado de las fases o los equipos del cuadro, re-renderiza
+    const fases = await CVX.getFases();
+    const equiposElim = (CVX.cache && CVX.cache.equiposElim) || {};
+    const sig = JSON.stringify({ fases, equiposElim });
+    if (sig !== window._faseSig) {
+      window._faseSig = sig;
+      await renderGrupos();
+      await renderElim();
+    }
+    await applyEspecialesLock();
+    if (currentUser) {
+      await refreshAllChips();
+      await updateUI();
+    }
+  }, 10000);
 });
+
+function showSkeletonLoader() {
+  const els = [
+    document.getElementById('user-banner-area'),
+    document.getElementById('grupos-container'),
+    document.getElementById('ranking-list')
+  ];
+  els.forEach(el => {
+    if (el) el.innerHTML = `
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>`;
+  });
+}
 
 function setupReveal() {
   const reveals = document.querySelectorAll('.reveal');
@@ -522,9 +581,19 @@ async function updateUI() {
 }
 
 // ══ RENDER GRUPOS ACORDEÓN ══
-function renderGrupos() {
+async function renderGrupos() {
   const container = document.getElementById('grupos-container');
   container.innerHTML = '';
+
+  const fases = await CVX.getFases();
+  const faseGrupo = fases.grupo || {};
+  const grupoBloqueado = faseGrupo.cerrada || !faseGrupo.habilitada;
+
+  let faseUsuario = {};
+  if (currentUser) {
+    faseUsuario = await CVX.getFaseUsuario(currentUser.id);
+  }
+
   CVX.GROUPS.forEach((g, gi) => {
     const matches = CVX.MATCHES_GRUPOS.filter(m => m.group === g);
     const teams = [...new Set(matches.flatMap(m => [m.local, m.visit]))];
@@ -533,6 +602,9 @@ function renderGrupos() {
     const acc = document.createElement('div');
     acc.className = 'grupo-acc';
     acc.id = `acc-${g}`;
+
+    const yaGuardo = faseUsuario.grupo;
+    const estadoTexto = grupoBloqueado ? (faseGrupo.cerrada ? '🔒 Fase cerrada' : '🔒 Próximamente') : (yaGuardo ? '✅ Pronósticos guardados' : '🔓 Abierta');
 
     acc.innerHTML = `
       <div class="grupo-hdr ${gi===0?'open':''}" onclick="toggleGrupo('${g}')">
@@ -545,20 +617,36 @@ function renderGrupos() {
         </div>
         <div class="grupo-meta">
           <span class="grupo-pts-chip" id="gchip-${g}">0 pts</span>
+          <span style="font-size:10px;color:var(--muted);padding:4px 8px;background:rgba(0,200,83,.08);border-radius:6px">${estadoTexto}</span>
           <span class="acc-arrow ${gi===0?'open':''}">▼</span>
         </div>
       </div>
       <div class="grupo-body ${gi===0?'open':''}" id="gbody-${g}">
-        ${matches.map(m => buildMatchRow(m)).join('')}
-        <button class="save-group-btn" onclick="saveGroup('${g}')">💾 Guardar pronósticos del Grupo ${g}</button>
+        ${matches.map(m => buildMatchRow(m, yaGuardo)).join('')}
+        <button class="save-group-btn" ${grupoBloqueado || yaGuardo ? 'disabled style="opacity:.5;cursor:not-allowed"' : ''} onclick="saveGroup('${g}')">${yaGuardo ? '✅ Guardado' : '💾 Guardar pronósticos del Grupo ' + g}</button>
       </div>`;
     container.appendChild(acc);
   });
 }
 
-function buildMatchRow(m) {
+// Construye la tarjeta de partido.
+// bloqueado: si true, desactiva inputs (fase ya guardada o cerrada)
+function buildMatchRow(m, bloqueado) {
   const fl = CVX.FLAGS[m.local] || '🏳️';
   const fv = CVX.FLAGS[m.visit] || '🏳️';
+  const isElim = m.phase !== 'grupo';
+  const disabledAttr = bloqueado ? 'disabled style="opacity:.6;cursor:not-allowed"' : '';
+
+  const clasificaField = isElim ? `
+    <div class="clasifica-field" id="cls-row-${m.id}">
+      <div class="clasifica-label">¿Quién clasifica?</div>
+      <div class="clasifica-opts">
+        <label><input type="radio" name="cls-${m.id}" value="local" ${disabledAttr ? 'disabled' : ''}> ${fl} ${m.local}</label>
+        <label><input type="radio" name="cls-${m.id}" value="visit" ${disabledAttr ? 'disabled' : ''}> ${fv} ${m.visit}</label>
+      </div>
+      <div class="clasifica-warn" id="cls-warn-${m.id}">⚠️ Selecciona quién clasifica</div>
+    </div>` : '';
+
   return `
   <div class="match-row" id="mr-${m.id}">
     <div class="mteam">
@@ -570,11 +658,14 @@ function buildMatchRow(m) {
       <div class="msede">${m.sede}</div>
       <div class="score-row-inp">
         <input class="sin" type="number" min="0" max="20" id="pl-${m.id}" placeholder="—"
+          ${disabledAttr}
           onchange="onPronChange('${m.id}')" />
         <span class="ssep">:</span>
         <input class="sin" type="number" min="0" max="20" id="pv-${m.id}" placeholder="—"
+          ${disabledAttr}
           onchange="onPronChange('${m.id}')" />
       </div>
+      ${clasificaField}
       <div id="chip-${m.id}"></div>
       <div class="res-oficial" id="res-${m.id}"></div>
     </div>
@@ -602,14 +693,20 @@ async function onPronChange(matchId) {
   const l = document.getElementById(`pl-${matchId}`)?.value;
   const v = document.getElementById(`pv-${matchId}`)?.value;
   if (l !== '' && v !== '') {
-    const inp1 = document.getElementById(`pl-${matchId}`);
-    const inp2 = document.getElementById(`pv-${matchId}`);
-    inp1.classList.add('saved'); inp2.classList.add('saved');
-    await updateChip(matchId, l, v);
+    document.getElementById(`pl-${matchId}`).classList.add('saved');
+    document.getElementById(`pv-${matchId}`).classList.add('saved');
+    const clasifica = _getClasifica(matchId);
+    await updateChip(matchId, l, v, clasifica);
     const m = CVX.MATCHES.find(x => x.id === matchId);
     if (m && m.phase === 'grupo') await updateGroupChip(m.group);
     else if (m) await updatePhaseChip(m.phase);
   }
+}
+
+// Obtiene el valor del radio "¿Quién clasifica?" para un partido (null si no aplica o no seleccionado)
+function _getClasifica(matchId) {
+  const checked = document.querySelector(`input[name="cls-${matchId}"]:checked`);
+  return checked ? checked.value : null;
 }
 
 async function saveGroup(g) {
@@ -621,17 +718,17 @@ async function saveGroup(g) {
   matches.forEach(m => {
     const l = document.getElementById(`pl-${m.id}`)?.value;
     const v = document.getElementById(`pv-${m.id}`)?.value;
-    if (l !== '' && v !== '') saves.push(CVX.savePronostico(currentUser.id, m.id, l, v));
+    if (l !== '' && v !== '') saves.push(CVX.savePronostico(currentUser.id, m.id, l, v, 'grupo'));
   });
   await Promise.all(saves);
-  if (btn) { btn.textContent = `💾 Guardar pronósticos del Grupo ${g}`; btn.disabled = false; }
+  if (btn) { btn.textContent = `✅ Guardado`; btn.disabled = true; }
   toast(`✅ ${saves.length} pronósticos del Grupo ${g} guardados`);
   await updateUI();
   if (saves.length > 0) confetti();
 }
 
 // ══ CHIPS ══
-async function updateChip(matchId, pronL, pronV) {
+async function updateChip(matchId, pronL, pronV, clasifica) {
   const resultados = await CVX.getResultados();
   const res = resultados[matchId];
   const chip = document.getElementById(`chip-${matchId}`);
@@ -641,13 +738,12 @@ async function updateChip(matchId, pronL, pronV) {
   const phase = m ? m.phase : 'grupo';
 
   if (res && res.l !== '' && res.l !== undefined) {
-    const r = CVX.calcPoints({ l: pronL, v: pronV }, res, phase);
-    resDiv.innerHTML = `<strong>Resultado: ${res.l}–${res.v}</strong>`;
+    const pron = { l: pronL, v: pronV, clasifica: clasifica || '' };
+    const r = CVX.calcPoints(pron, res, phase);
+    resDiv.innerHTML = `<strong>Resultado: ${res.l}–${res.v}${res.clasifica ? ' (clasifica '+res.clasifica+')' : ''}</strong>`;
     if (r.label === 'exacto')
       chip.innerHTML = `<span class="result-chip rc-exact">⚡ Exacto +${r.pts} pts</span>`;
-    else if (r.label === 'ganador_diff')
-      chip.innerHTML = `<span class="result-chip rc-diff">✓ Gan.+Diff +${r.pts} pts</span>`;
-    else if (r.label === 'ganador' || r.label === 'clasificado')
+    else if (r.label === 'clasificado' || r.label === 'ganador')
       chip.innerHTML = `<span class="result-chip rc-winner">✓ Acierto +${r.pts} pts</span>`;
     else if (r.label === 'fallo')
       chip.innerHTML = `<span class="result-chip rc-miss">✗ Fallado</span>`;
@@ -676,9 +772,14 @@ async function refreshAllChips() {
     if (p && inp1 && inp2) {
       inp1.value = p.l; inp2.value = p.v;
       inp1.classList.add('saved'); inp2.classList.add('saved');
-      _updateChipSync(m.id, p.l, p.v, resultados);
+      // Restaurar radio de clasifica si es eliminatoria
+      if (m.phase !== 'grupo' && p.clasifica) {
+        const radio = document.querySelector(`input[name="cls-${m.id}"][value="${p.clasifica}"]`);
+        if (radio) radio.checked = true;
+      }
+      _updateChipSync(m.id, p.l, p.v, p.clasifica || '', resultados);
     } else {
-      _updateChipSync(m.id, '', '', resultados);
+      _updateChipSync(m.id, '', '', '', resultados);
     }
     if (m.phase === 'grupo' && m.group) updatedGroups.add(m.group);
     else updatedPhases.add(m.phase);
@@ -687,8 +788,7 @@ async function refreshAllChips() {
   _updatePhaseChipsSync(prons, resultados, updatedPhases);
 }
 
-// Versiones síncronas internas (usan datos ya cargados)
-function _updateChipSync(matchId, pronL, pronV, resultados) {
+function _updateChipSync(matchId, pronL, pronV, clasifica, resultados) {
   const res = resultados[matchId];
   const chip = document.getElementById(`chip-${matchId}`);
   const resDiv = document.getElementById(`res-${matchId}`);
@@ -696,12 +796,12 @@ function _updateChipSync(matchId, pronL, pronV, resultados) {
   const m = CVX.MATCHES.find(x => x.id === matchId);
   const phase = m ? m.phase : 'grupo';
   if (res && res.l !== '' && res.l !== undefined) {
-    const r = CVX.calcPoints({ l: pronL, v: pronV }, res, phase);
-    if (resDiv) resDiv.innerHTML = `<strong>Resultado: ${res.l}–${res.v}</strong>`;
-    if (r.label === 'exacto')         chip.innerHTML = `<span class="result-chip rc-exact">⚡ Exacto +${r.pts} pts</span>`;
-    else if (r.label === 'ganador_diff') chip.innerHTML = `<span class="result-chip rc-diff">✓ Gan.+Diff +${r.pts} pts</span>`;
-    else if (r.label === 'ganador' || r.label === 'clasificado') chip.innerHTML = `<span class="result-chip rc-winner">✓ Acierto +${r.pts} pts</span>`;
-    else if (r.label === 'fallo')     chip.innerHTML = `<span class="result-chip rc-miss">✗ Fallado</span>`;
+    const pron = { l: pronL, v: pronV, clasifica: clasifica || '' };
+    const r = CVX.calcPoints(pron, res, phase);
+    if (resDiv) resDiv.innerHTML = `<strong>Resultado: ${res.l}–${res.v}${res.clasifica ? ' (clasifica '+res.clasifica+')' : ''}</strong>`;
+    if (r.label === 'exacto')                          chip.innerHTML = `<span class="result-chip rc-exact">⚡ Exacto +${r.pts} pts</span>`;
+    else if (r.label === 'clasificado' || r.label === 'ganador') chip.innerHTML = `<span class="result-chip rc-winner">✓ Acierto +${r.pts} pts</span>`;
+    else if (r.label === 'fallo')                      chip.innerHTML = `<span class="result-chip rc-miss">✗ Fallado</span>`;
     else chip.innerHTML = '';
   } else {
     if (resDiv) resDiv.innerHTML = '';
@@ -746,8 +846,35 @@ async function updatePhaseChip(phaseId) {
 }
 
 // ══ ESPECIALES ══
+// Devuelve true si las predicciones especiales están habilitadas por el admin.
+async function especialesHabilitadas() {
+  const fases = await CVX.getFases();
+  const f = fases.especiales || {};
+  return !!f.habilitada && !f.cerrada;
+}
+
+async function applyEspecialesLock() {
+  const habilitada = await especialesHabilitadas();
+  const grid = document.getElementById('esp-grid');
+  const btn = document.getElementById('esp-save-btn');
+  const msg = document.getElementById('esp-locked-msg');
+  const inputs = ['esp-campeon','esp-sub','esp-gol','esp-rev'].map(id => document.getElementById(id));
+  if (habilitada) {
+    if (msg) msg.style.display = 'none';
+    if (grid) grid.style.display = '';
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; btn.style.cursor = ''; }
+    inputs.forEach(i => { if (i) i.disabled = false; });
+  } else {
+    if (msg) msg.style.display = 'block';
+    if (grid) grid.style.display = 'none';
+    if (btn) { btn.disabled = true; btn.style.opacity = '.5'; btn.style.cursor = 'not-allowed'; }
+    inputs.forEach(i => { if (i) i.disabled = true; });
+  }
+}
+
 async function saveEspeciales() {
   if (!currentUser) { toast('⚠️ Inicia sesión primero'); openLogin(); return; }
+  if (!(await especialesHabilitadas())) { toast('🔒 Las predicciones especiales aún no están habilitadas'); return; }
   toast('⏳ Guardando...');
   await CVX.saveEspecial(currentUser.id, {
     campeon:   document.getElementById('esp-campeon').value,
@@ -759,6 +886,7 @@ async function saveEspeciales() {
   confetti();
 }
 async function loadEspeciales() {
+  await applyEspecialesLock();
   const user = CVX.getCurrentUser();
   if (!user) return;
   const all = await CVX.getEspeciales();
@@ -812,52 +940,93 @@ async function renderElim() {
   if (!container) return;
   container.innerHTML = '';
 
-  // Phase unlock state from localStorage (admin controls this)
-  const unlocks = JSON.parse(localStorage.getItem('cvx2026_phases_unlocked') || '{}');
+  const fases = await CVX.getFases();
+  const equiposElim = (CVX.cache && CVX.cache.equiposElim) || {};
+  let faseUsuario = {};
+  let allProns = {}, resultados = {};
+  if (currentUser) {
+    faseUsuario = await CVX.getFaseUsuario(currentUser.id);
+    [allProns, resultados] = await Promise.all([CVX.getPronosticos(), CVX.getResultados()]);
+  }
+  const prons = allProns[currentUser?.id] || {};
 
   const label = document.createElement('div');
   label.className = 'fase-section-label';
   label.textContent = 'Fases Eliminatorias';
   container.appendChild(label);
 
-  // Pre-fetch data once for all phase chips
-  let allProns = {}, resultados = {};
-  if (currentUser) {
-    [allProns, resultados] = await Promise.all([CVX.getPronosticos(), CVX.getResultados()]);
-  }
-  const prons = allProns[currentUser?.id] || {};
-
   CVX.PHASES.filter(ph => ph.id !== 'grupo').forEach(ph => {
-    const unlocked = unlocks[ph.id] !== undefined ? unlocks[ph.id] : ph.unlocked;
-    const matches = CVX.MATCHES_ELIM.filter(m => m.phase === ph.id);
+    const faseData = fases[ph.id] || {};
+    const habilitada = faseData.habilitada && !faseData.cerrada;
+    const yaGuardo = faseUsuario[ph.id];
+    let matches = CVX.MATCHES_ELIM.filter(m => m.phase === ph.id);
+
+    // Cargar nombres de equipos si están disponibles (equiposElim = { matchId: {local, visit} })
+    matches = matches.map(m => {
+      const eq = equiposElim[m.id];
+      if (eq && (eq.local || eq.visit)) {
+        return {
+          ...m,
+          local: eq.local || m.local,
+          visit: eq.visit || m.visit
+        };
+      }
+      return m;
+    });
 
     const acc = document.createElement('div');
-    acc.className = 'fase-acc' + (unlocked ? '' : ' locked');
+    acc.className = 'fase-acc' + (habilitada ? '' : ' locked');
     acc.id = `fase-acc-${ph.id}`;
 
-    const bodyContent = unlocked
-      ? matches.map(m => buildMatchRow(m)).join('')
-        + `<button class="save-group-btn" onclick="savePhase('${ph.id}')">💾 Guardar pronósticos — ${ph.label}</button>`
+    let estadoTexto, estadoIcon;
+    if (faseData.cerrada) {
+      estadoTexto = 'Fase cerrada';
+      estadoIcon = '🔒';
+    } else if (yaGuardo) {
+      estadoTexto = 'Pronósticos guardados';
+      estadoIcon = '✅';
+    } else if (habilitada) {
+      estadoTexto = 'Abierta';
+      estadoIcon = '🔓';
+    } else {
+      estadoTexto = 'Próximamente';
+      estadoIcon = '🔒';
+    }
+
+    const bodyContent = habilitada
+      ? matches.map(m => buildMatchRow(m, yaGuardo)).join('')
+        + `<button class="save-group-btn" ${faseData.cerrada || yaGuardo ? 'disabled style="opacity:.5;cursor:not-allowed"' : ''} onclick="savePhase('${ph.id}')">${yaGuardo ? '✅ Guardado' : '💾 Guardar pronósticos — ' + ph.label}</button>`
       : `<div class="fase-locked-msg"><span class="lk-icon">🔒</span><p>Esta fase aún no ha comenzado.<br>El administrador la habilitará cuando llegue el momento.</p></div>`;
 
     acc.innerHTML = `
-      <div class="fase-hdr" onclick="${unlocked ? `toggleFase('${ph.id}')` : ''}">
+      <div class="fase-hdr" onclick="${habilitada ? `toggleFase('${ph.id}')` : ''}">
         <div class="fase-title-row">
           <div class="fase-icon-big">${ph.icon}</div>
           <div class="fase-info-col">
             <div class="fase-label-name">${ph.label}</div>
-            <div class="fase-locked-sub">${unlocked ? matches.length + ' partidos' : '🔒 Bloqueado — próximamente'}</div>
+            <div class="fase-locked-sub">${habilitada ? matches.length + ' partidos' : estadoTexto}</div>
           </div>
         </div>
         <div class="fase-meta-row">
           <span class="fase-pts-chip" id="fchip-${ph.id}">0 pts</span>
-          ${unlocked ? '<span class="acc-arrow">▼</span>' : ''}
+          <span style="font-size:10px;color:var(--muted);padding:4px 8px;background:rgba(0,200,83,.08);border-radius:6px">${estadoIcon} ${estadoTexto}</span>
+          ${habilitada ? '<span class="acc-arrow">▼</span>' : ''}
         </div>
       </div>
       <div class="fase-body" id="fbody-${ph.id}">${bodyContent}</div>`;
     container.appendChild(acc);
 
-    if (unlocked) _updatePhaseChipsSync(prons, resultados, new Set([ph.id]));
+    if (habilitada) {
+      _updatePhaseChipsSync(prons, resultados, new Set([ph.id]));
+      // Restaurar radios de clasifica para pronósticos ya guardados
+      matches.forEach(m => {
+        const p = prons[m.id];
+        if (p && p.clasifica) {
+          const radio = document.querySelector(`input[name="cls-${m.id}"][value="${p.clasifica}"]`);
+          if (radio) radio.checked = true;
+        }
+      });
+    }
   });
 }
 
@@ -879,15 +1048,42 @@ function toggleFase(phaseId) {
 async function savePhase(phaseId) {
   if (!currentUser) { toast('⚠️ Inicia sesión primero'); openLogin(); return; }
   const matches = CVX.MATCHES_ELIM.filter(m => m.phase === phaseId);
+
+  // Validar que todos los partidos con marcador tengan clasifica seleccionado
+  let missing = false;
+  matches.forEach(m => {
+    const l = document.getElementById(`pl-${m.id}`)?.value;
+    const v = document.getElementById(`pv-${m.id}`)?.value;
+    if (l !== '' && v !== '') {
+      const clasifica = _getClasifica(m.id);
+      const warn = document.getElementById(`cls-warn-${m.id}`);
+      if (!clasifica) {
+        missing = true;
+        if (warn) warn.style.display = 'block';
+      } else {
+        if (warn) warn.style.display = 'none';
+      }
+    }
+  });
+  if (missing) {
+    toast('⚠️ Selecciona quién clasifica en cada partido que pronosticaste');
+    return;
+  }
+
   const saves = [];
   matches.forEach(m => {
     const l = document.getElementById(`pl-${m.id}`)?.value;
     const v = document.getElementById(`pv-${m.id}`)?.value;
-    if (l !== '' && v !== '') saves.push(CVX.savePronostico(currentUser.id, m.id, l, v));
+    if (l !== '' && v !== '') {
+      const clasifica = _getClasifica(m.id);
+      saves.push(CVX.savePronostico(currentUser.id, m.id, l, v, phaseId, clasifica));
+    }
   });
   toast('⏳ Guardando...');
   await Promise.all(saves);
   const ph = CVX.PHASES.find(p => p.id === phaseId);
+  const btnContainer = document.querySelector(`#fbody-${phaseId} .save-group-btn`);
+  if (btnContainer) { btnContainer.textContent = '✅ Guardado'; btnContainer.disabled = true; }
   toast(`✅ ${saves.length} pronósticos de ${ph ? ph.label : phaseId} guardados`);
   await updateUI();
   if (saves.length > 0) confetti();
