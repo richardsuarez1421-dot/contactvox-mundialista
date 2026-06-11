@@ -67,13 +67,13 @@ const CVX = (() => {
   const ALLOWED_NORM2 = new Set(ALLOWED_NAMES.map(normalizeNameKey));
   const ALLOWED_USER_IDS = new Set(ALLOWED_NAMES.map(buildUserIdFromName).filter(Boolean));
   const ALLOWED_NORM = new Set(ALLOWED_NAMES.map(n =>
-    n.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    n.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   ));
 
   function isAllowedUser(name) {
     return !!name && ALLOWED_NORM2.has(normalizeNameKey(name));
     if (!name) return false;
-    const n = name.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const n = name.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     return ALLOWED_NORM.has(n);
   }
 
@@ -506,20 +506,24 @@ const CVX = (() => {
     try {
       const user = normalizeStoredUser(JSON.parse(localStorage.getItem('cvx2026_current_user')) || null);
       if (!user || !hasText(user.id) || !hasText(user.name)) {
-        localStorage.removeItem('cvx2026_current_user');
+        try { localStorage.removeItem('cvx2026_current_user'); } catch {}
         return null;
       }
-      localStorage.setItem('cvx2026_current_user', JSON.stringify(user));
+      try { localStorage.setItem('cvx2026_current_user', JSON.stringify(user)); } catch {}
       return user;
     } catch {
-      localStorage.removeItem('cvx2026_current_user');
+      try { localStorage.removeItem('cvx2026_current_user'); } catch {}
       return null;
     }
   }
   function setCurrentUser(user) {
-    const normalizedUser = normalizeStoredUser(user);
-    if (!normalizedUser || !hasText(normalizedUser.id) || !hasText(normalizedUser.name)) return;
-    localStorage.setItem('cvx2026_current_user', JSON.stringify(normalizedUser));
+    try {
+      const normalizedUser = normalizeStoredUser(user);
+      if (!normalizedUser || !hasText(normalizedUser.id) || !hasText(normalizedUser.name)) return;
+      localStorage.setItem('cvx2026_current_user', JSON.stringify(normalizedUser));
+    } catch (e) {
+      console.warn('localStorage is disabled or unavailable', e);
+    }
   }
 
   // -- SETTERS (Firebase) -----------------------------------------
