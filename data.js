@@ -584,7 +584,7 @@ const CVX = (() => {
 
   async function habilitarFase(fase) {
     try {
-      await fbUpdate(`fases/${fase}`, { habilitada: true, habilitadaEn: new Date().toISOString() });
+      await fbUpdate(`fases/${fase}`, { habilitada: true, cerrada: false, habilitadaEn: new Date().toISOString() });
       invalidateCache();
       return { ok: true };
     } catch (err) {
