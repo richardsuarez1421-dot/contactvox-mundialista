@@ -213,9 +213,11 @@ const CVX = (() => {
   };
 
   // ── CACHÉ LOCAL (evita llamadas repetidas al API) ──────────────
-  let _cache = null;
-  let _cacheTs = 0;
-  const CACHE_TTL = 30000; // 30 segundos
+  let _cache    = null;
+  let _cacheTs  = 0;
+  let _inflight = null;   // promesa en vuelo — evita solicitudes duplicadas
+  let _postSem  = 0;      // semáforo para limitar POSTs concurrentes
+  const CACHE_TTL = 90000; // 90 segundos
   const VALID_MATCH_IDS = new Set(MATCHES.map(m => m.id));
 
   function hasText(value) {
@@ -300,7 +302,10 @@ const CVX = (() => {
     }
   }
 
+  // Máximo 3 POSTs simultáneos — evita saturar Apps Script con guardados en masa
   async function apiPost(payload) {
+    while (_postSem >= 3) await new Promise(r => setTimeout(r, 300));
+    _postSem++;
     try {
       const res = await fetch(API_URL, {
         method:  'POST',
@@ -313,25 +318,33 @@ const CVX = (() => {
     } catch (err) {
       console.error('CVX apiPost error:', err);
       return null;
+    } finally {
+      _postSem--;
     }
   }
 
   // ── CACHÉ ──────────────────────────────────────────────────────
+  // Si ya hay un fetch en vuelo, los llamadores adicionales esperan ESA misma
+  // promesa en lugar de lanzar una nueva solicitud HTTP.
+
+  const _emptyCache = () => ({
+    usuarios: [], pronosticos: {}, resultados: {}, especiales: {},
+    fases: { grupo:{}, octavos:{}, cuartos:{}, semis:{}, tercero:{}, final:{} },
+    equiposElim: {}, premiosSemanales: [],
+  });
 
   async function getCache(forceRefresh = false) {
     const now = Date.now();
     if (!forceRefresh && _cache && (now - _cacheTs) < CACHE_TTL) return _cache;
-    const fresh = await apiGet();
-    if (fresh) { _cache = fresh; _cacheTs = now; }
-    return _cache || {
-      usuarios: [],
-      pronosticos: {},
-      resultados: {},
-      especiales: {},
-      fases: { grupo:{}, octavos:{}, cuartos:{}, semis:{}, tercero:{}, final:{} },
-      equiposElim: {},
-      premiosSemanales: []
-    };
+    if (_inflight) return _inflight;
+    _inflight = apiGet()
+      .then(fresh => {
+        if (fresh) { _cache = fresh; _cacheTs = Date.now(); }
+        _inflight = null;
+        return _cache || _emptyCache();
+      })
+      .catch(() => { _inflight = null; return _cache || _emptyCache(); });
+    return _inflight;
   }
 
   function invalidateCache() { _cache = null; _cacheTs = 0; }
@@ -485,7 +498,7 @@ const CVX = (() => {
 
   // ── RANKING ────────────────────────────────────────────────────
   async function buildRanking() {
-    const data = await getCache(true);
+    const data = await getCache();
     const { usuarios, pronosticos, resultados, especiales } = data;
 
     return (usuarios || []).map(u => {

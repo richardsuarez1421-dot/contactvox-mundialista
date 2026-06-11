@@ -512,24 +512,30 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Refresh automático cada 10 segundos
-  setInterval(async () => {
-    CVX.invalidateCache();
-    // Si cambió el estado de las fases o los equipos del cuadro, re-renderiza
-    const fases = await CVX.getFases();
-    const equiposElim = (CVX.cache && CVX.cache.equiposElim) || {};
-    const sig = JSON.stringify({ fases, equiposElim });
-    if (sig !== window._faseSig) {
-      window._faseSig = sig;
-      await renderGrupos();
-      await renderElim();
-    }
-    await applyEspecialesLock();
-    if (currentUser) {
-      await refreshAllChips();
-      await updateUI();
-    }
-  }, 10000);
+  // Refresh automático con jitter (25-40 s) para que los clientes no golpeen
+  // el API simultáneamente. No invalida el caché a la fuerza — deja que el TTL
+  // (90 s en data.js) controle cuándo se hace una nueva petición real.
+  (function scheduleRefresh() {
+    const delay = 25000 + Math.random() * 15000; // 25–40 s aleatorio por cliente
+    setTimeout(async () => {
+      try {
+        const fases = await CVX.getFases();
+        const equiposElim = (CVX.cache && CVX.cache.equiposElim) || {};
+        const sig = JSON.stringify({ fases, equiposElim });
+        if (sig !== window._faseSig) {
+          window._faseSig = sig;
+          await renderGrupos();
+          await renderElim();
+        }
+        await applyEspecialesLock();
+        if (currentUser) {
+          await refreshAllChips();
+          await updateUI();
+        }
+      } catch(e) { console.warn('CVX refresh error', e); }
+      scheduleRefresh(); // programa el siguiente ciclo
+    }, delay);
+  })();
 });
 
 function showSkeletonLoader() {
@@ -719,6 +725,12 @@ function _getClasifica(matchId) {
 
 async function saveGroup(g) {
   if (!currentUser) { toast('⚠️ Inicia sesión primero'); openLogin(); return; }
+  // Verificar en el servidor que el usuario no haya enviado ya esta fase
+  const faseUsuario = await CVX.getFaseUsuario(currentUser.id);
+  if (faseUsuario.grupo) {
+    toast('⚠️ Ya enviaste tus pronósticos. No se pueden modificar.');
+    return;
+  }
   const btn = document.querySelector(`#gbody-${g} .save-group-btn`);
   if (btn) { btn.textContent = '⏳ Guardando...'; btn.disabled = true; }
   const matches = CVX.MATCHES_GRUPOS.filter(m => m.group === g);
@@ -1064,6 +1076,12 @@ function toggleFase(phaseId) {
 
 async function savePhase(phaseId) {
   if (!currentUser) { toast('⚠️ Inicia sesión primero'); openLogin(); return; }
+  // Verificar en el servidor que el usuario no haya enviado ya esta fase
+  const faseUsuario = await CVX.getFaseUsuario(currentUser.id);
+  if (faseUsuario[phaseId]) {
+    toast('⚠️ Ya enviaste tus pronósticos de esta fase. No se pueden modificar.');
+    return;
+  }
   const matches = CVX.MATCHES_ELIM.filter(m => m.phase === phaseId);
 
   // Validar que todos los partidos con marcador tengan clasifica seleccionado
