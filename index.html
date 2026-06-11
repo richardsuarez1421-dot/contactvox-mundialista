@@ -723,7 +723,7 @@ function _getClasifica(matchId) {
 async function saveGroup(g) {
   if (!currentUser) { toast('⚠️ Inicia sesión primero'); openLogin(); return; }
   // Verificar por grupo específico si el usuario ya guardó ESTE grupo
-  const prons = await CVX.getPronosticos();
+  const [prons, resultados] = await Promise.all([CVX.getPronosticos(), CVX.getResultados()]);
   const userProns = (prons[currentUser.id]) || {};
   const matchesDelGrupo = CVX.MATCHES_GRUPOS.filter(m => m.group === g);
   if (matchesDelGrupo.some(m => userProns[m.id])) {
@@ -731,9 +731,12 @@ async function saveGroup(g) {
     return;
   }
   const matches = CVX.MATCHES_GRUPOS.filter(m => m.group === g);
-  // Validar que TODOS los partidos tengan pronóstico
+  // Validar que todos los partidos SIN resultado oficial tengan pronóstico
   const vacios = [];
   matches.forEach(m => {
+    const res = resultados[m.id];
+    const tieneResultado = res && res.l !== '' && res.l !== undefined;
+    if (tieneResultado) return; // bloqueado por resultado oficial, no exigir
     const l = document.getElementById(`pl-${m.id}`)?.value;
     const v = document.getElementById(`pv-${m.id}`)?.value;
     if (l === '' || v === '') vacios.push(m.id);
@@ -750,9 +753,12 @@ async function saveGroup(g) {
   if (btn) { btn.textContent = '⏳ Guardando...'; btn.disabled = true; }
   const saves = [];
   matches.forEach(m => {
+    const res = resultados[m.id];
+    const tieneResultado = res && res.l !== '' && res.l !== undefined;
+    if (tieneResultado) return; // no guardar pronóstico de partido ya jugado
     const l = document.getElementById(`pl-${m.id}`)?.value;
     const v = document.getElementById(`pv-${m.id}`)?.value;
-    saves.push(CVX.savePronostico(currentUser.id, m.id, l, v, 'grupo'));
+    if (l !== '' && v !== '') saves.push(CVX.savePronostico(currentUser.id, m.id, l, v, 'grupo'));
   });
   await Promise.all(saves);
   if (btn) { btn.textContent = `✅ Guardado`; btn.disabled = true; }
@@ -1091,16 +1097,19 @@ function toggleFase(phaseId) {
 async function savePhase(phaseId) {
   if (!currentUser) { toast('⚠️ Inicia sesión primero'); openLogin(); return; }
   // Verificar en el servidor que el usuario no haya enviado ya esta fase
-  const faseUsuario = await CVX.getFaseUsuario(currentUser.id);
+  const [faseUsuario, resultados] = await Promise.all([CVX.getFaseUsuario(currentUser.id), CVX.getResultados()]);
   if (faseUsuario[phaseId]) {
     toast('⚠️ Ya enviaste tus pronósticos de esta fase. No se pueden modificar.');
     return;
   }
   const matches = CVX.MATCHES_ELIM.filter(m => m.phase === phaseId);
 
-  // Validar que TODOS los partidos tengan ambos marcadores
+  // Validar que todos los partidos SIN resultado oficial tengan ambos marcadores
   const vacios = [];
   matches.forEach(m => {
+    const res = resultados[m.id];
+    const tieneResultado = res && res.l !== '' && res.l !== undefined;
+    if (tieneResultado) return; // bloqueado por resultado oficial, no exigir
     const l = document.getElementById(`pl-${m.id}`)?.value;
     const v = document.getElementById(`pv-${m.id}`)?.value;
     if (l === '' || v === '') vacios.push(m.id);
@@ -1115,9 +1124,12 @@ async function savePhase(phaseId) {
     return;
   }
 
-  // Validar que todos los partidos tengan clasifica seleccionado
+  // Validar que todos los partidos (sin resultado oficial) tengan clasifica seleccionado
   let missing = false;
   matches.forEach(m => {
+    const res = resultados[m.id];
+    const tieneResultado = res && res.l !== '' && res.l !== undefined;
+    if (tieneResultado) return;
     const clasifica = _getClasifica(m.id);
     const warn = document.getElementById(`cls-warn-${m.id}`);
     if (!clasifica) {
@@ -1134,10 +1146,13 @@ async function savePhase(phaseId) {
 
   const saves = [];
   matches.forEach(m => {
+    const res = resultados[m.id];
+    const tieneResultado = res && res.l !== '' && res.l !== undefined;
+    if (tieneResultado) return; // no guardar pronóstico de partido ya jugado
     const l = document.getElementById(`pl-${m.id}`)?.value;
     const v = document.getElementById(`pv-${m.id}`)?.value;
     const clasifica = _getClasifica(m.id);
-    saves.push(CVX.savePronostico(currentUser.id, m.id, l, v, phaseId, clasifica));
+    if (l !== '' && v !== '') saves.push(CVX.savePronostico(currentUser.id, m.id, l, v, phaseId, clasifica));
   });
   toast('⏳ Guardando...');
   await Promise.all(saves);
