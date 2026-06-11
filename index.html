@@ -731,14 +731,29 @@ async function saveGroup(g) {
     toast('⚠️ Ya enviaste tus pronósticos. No se pueden modificar.');
     return;
   }
+  const matches = CVX.MATCHES_GRUPOS.filter(m => m.group === g);
+  // Validar que TODOS los partidos tengan pronóstico
+  const vacios = [];
+  matches.forEach(m => {
+    const l = document.getElementById(`pl-${m.id}`)?.value;
+    const v = document.getElementById(`pv-${m.id}`)?.value;
+    if (l === '' || v === '') vacios.push(m.id);
+  });
+  if (vacios.length > 0) {
+    toast(`⚠️ Faltan ${vacios.length} partido${vacios.length > 1 ? 's' : ''} por pronosticar en el Grupo ${g}`);
+    vacios.forEach(id => {
+      const el = document.getElementById(`mr-${id}`);
+      if (el) { el.style.outline = '2px solid var(--rojo)'; setTimeout(() => el.style.outline = '', 3000); }
+    });
+    return;
+  }
   const btn = document.querySelector(`#gbody-${g} .save-group-btn`);
   if (btn) { btn.textContent = '⏳ Guardando...'; btn.disabled = true; }
-  const matches = CVX.MATCHES_GRUPOS.filter(m => m.group === g);
   const saves = [];
   matches.forEach(m => {
     const l = document.getElementById(`pl-${m.id}`)?.value;
     const v = document.getElementById(`pv-${m.id}`)?.value;
-    if (l !== '' && v !== '') saves.push(CVX.savePronostico(currentUser.id, m.id, l, v, 'grupo'));
+    saves.push(CVX.savePronostico(currentUser.id, m.id, l, v, 'grupo'));
   });
   await Promise.all(saves);
   if (btn) { btn.textContent = `✅ Guardado`; btn.disabled = true; }
@@ -1084,20 +1099,33 @@ async function savePhase(phaseId) {
   }
   const matches = CVX.MATCHES_ELIM.filter(m => m.phase === phaseId);
 
-  // Validar que todos los partidos con marcador tengan clasifica seleccionado
-  let missing = false;
+  // Validar que TODOS los partidos tengan ambos marcadores
+  const vacios = [];
   matches.forEach(m => {
     const l = document.getElementById(`pl-${m.id}`)?.value;
     const v = document.getElementById(`pv-${m.id}`)?.value;
-    if (l !== '' && v !== '') {
-      const clasifica = _getClasifica(m.id);
-      const warn = document.getElementById(`cls-warn-${m.id}`);
-      if (!clasifica) {
-        missing = true;
-        if (warn) warn.style.display = 'block';
-      } else {
-        if (warn) warn.style.display = 'none';
-      }
+    if (l === '' || v === '') vacios.push(m.id);
+  });
+  if (vacios.length > 0) {
+    const ph = CVX.PHASES.find(p => p.id === phaseId);
+    toast(`⚠️ Faltan ${vacios.length} partido${vacios.length > 1 ? 's' : ''} por pronosticar en ${ph ? ph.label : phaseId}`);
+    vacios.forEach(id => {
+      const el = document.getElementById(`mr-${id}`);
+      if (el) { el.style.outline = '2px solid var(--rojo)'; setTimeout(() => el.style.outline = '', 3000); }
+    });
+    return;
+  }
+
+  // Validar que todos los partidos tengan clasifica seleccionado
+  let missing = false;
+  matches.forEach(m => {
+    const clasifica = _getClasifica(m.id);
+    const warn = document.getElementById(`cls-warn-${m.id}`);
+    if (!clasifica) {
+      missing = true;
+      if (warn) warn.style.display = 'block';
+    } else {
+      if (warn) warn.style.display = 'none';
     }
   });
   if (missing) {
@@ -1109,10 +1137,8 @@ async function savePhase(phaseId) {
   matches.forEach(m => {
     const l = document.getElementById(`pl-${m.id}`)?.value;
     const v = document.getElementById(`pv-${m.id}`)?.value;
-    if (l !== '' && v !== '') {
-      const clasifica = _getClasifica(m.id);
-      saves.push(CVX.savePronostico(currentUser.id, m.id, l, v, phaseId, clasifica));
-    }
+    const clasifica = _getClasifica(m.id);
+    saves.push(CVX.savePronostico(currentUser.id, m.id, l, v, phaseId, clasifica));
   });
   toast('⏳ Guardando...');
   await Promise.all(saves);
