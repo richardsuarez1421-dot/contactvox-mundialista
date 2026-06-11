@@ -248,7 +248,7 @@ const CVX = (() => {
         const v = cleanText(p.v);
         if (l === '' || v === '') return;
         if (!pronosticos[uid]) pronosticos[uid] = {};
-        pronosticos[uid][mid] = { l, v, clasifica: cleanText(p.clasifica) || '' };
+        pronosticos[uid][mid] = { l, v, clasifica: cleanText(p.clasifica) || '', fase: cleanText(p.fase) || '' };
       });
     });
 
@@ -538,8 +538,11 @@ const CVX = (() => {
     const userProns = (prons || {})[userId] || {};
     const out = { grupo: false, octavos: false, cuartos: false, semis: false, tercero: false, final: false };
     const fasesPronosticadas = new Set();
-    Object.values(userProns).forEach(p => {
-      if (p.fase) fasesPronosticadas.add(p.fase);
+    Object.entries(userProns).forEach(([mid, p]) => {
+      // Usa la fase guardada; si falta (datos antiguos), la infiere del partido
+      let fase = p.fase;
+      if (!fase) { const m = MATCHES.find(x => x.id === mid); fase = m ? m.phase : ''; }
+      if (fase) fasesPronosticadas.add(fase);
     });
     PHASES.forEach(ph => { out[ph.id] = fasesPronosticadas.has(ph.id); });
     return out;
@@ -555,6 +558,117 @@ const CVX = (() => {
       .slice(0, 5);
   }
 
+  // ── CUADRO ELIMINATORIO AUTOMÁTICO ─────────────────────────────
+  // Normaliza nombres de equipos que aparecen escritos distinto.
+  const TEAM_ALIAS = {
+    'Bosnia y Herz.': 'Bosnia y Herzegovina',
+  };
+  function normTeam(t) { const s = cleanText(t); return TEAM_ALIAS[s] || s; }
+
+  // Tabla de posiciones de un grupo a partir de los resultados.
+  function groupStandings(groupLetter, resultados) {
+    const ms = MATCHES_GRUPOS.filter(m => m.group === groupLetter);
+    const table = {};
+    const ensure = t => { if (!table[t]) table[t] = { team: t, pts: 0, gf: 0, ga: 0, gd: 0, pj: 0 }; return table[t]; };
+    let jugados = 0;
+    ms.forEach(m => {
+      const r = (resultados || {})[m.id];
+      if (!r || r.l === '' || r.l === undefined || r.l === null) return;
+      const l = parseInt(r.l), v = parseInt(r.v);
+      if (isNaN(l) || isNaN(v)) return;
+      jugados++;
+      const A = ensure(normTeam(m.local)), B = ensure(normTeam(m.visit));
+      A.pj++; B.pj++; A.gf += l; A.ga += v; B.gf += v; B.ga += l;
+      if (l > v) A.pts += 3; else if (v > l) B.pts += 3; else { A.pts++; B.pts++; }
+    });
+    Object.values(table).forEach(t => t.gd = t.gf - t.ga);
+    const sorted = Object.values(table).sort((a, b) =>
+      b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.team.localeCompare(b.team));
+    return { allPlayed: jugados === ms.length, sorted };
+  }
+
+  // Ganador de un partido eliminatorio ya con nombres resueltos.
+  function elimWinner(localName, visitName, res) {
+    if (!res || res.l === '' || res.l === undefined || res.l === null) return null;
+    const l = parseInt(res.l), v = parseInt(res.v);
+    if (isNaN(l) || isNaN(v)) return null;
+    if (l > v) return { win: localName, lose: visitName };
+    if (v > l) return { win: visitName, lose: localName };
+    // Empate → se usa clasifica (penales)
+    if (res.clasifica === 'local') return { win: localName, lose: visitName };
+    if (res.clasifica === 'visit') return { win: visitName, lose: localName };
+    return null;
+  }
+
+  // Construye el cuadro eliminatorio completo (nombres por matchId) usando
+  // la lógica del mundial: 1°/2° de grupo + 8 mejores terceros en octavos, y
+  // avance de ganadores en las rondas siguientes. Devuelve { matchId: {local, visit} }
+  // solo para los partidos cuyos equipos ya quedaron determinados.
+  function computeBracket(resultados) {
+    const out = {};
+    const resolved = {}; // matchId -> { local, visit } (nombres reales o etiqueta original)
+
+    // 1) Posiciones por grupo
+    const standings = {};
+    const tercerosCompletos = [];
+    GROUPS.forEach(g => {
+      const st = groupStandings(g, resultados);
+      standings[g] = st;
+      if (st.allPlayed && st.sorted[2]) {
+        tercerosCompletos.push({ group: g, ...st.sorted[2] });
+      }
+    });
+    // 8 mejores terceros (solo de grupos completos)
+    const mejoresTerceros = tercerosCompletos.sort((a, b) =>
+      b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.team.localeCompare(b.team));
+
+    // Resuelve una etiqueta tipo "1° Grupo A" / "2° Grupo B" / "3° mejor 3"
+    function resolveGroupLabel(label) {
+      let mm = label.match(/^1° Grupo ([A-L])$/);
+      if (mm) { const st = standings[mm[1]]; return (st && st.allPlayed && st.sorted[0]) ? st.sorted[0].team : null; }
+      mm = label.match(/^2° Grupo ([A-L])$/);
+      if (mm) { const st = standings[mm[1]]; return (st && st.allPlayed && st.sorted[1]) ? st.sorted[1].team : null; }
+      mm = label.match(/^3° mejor (\d)$/);
+      if (mm) { const idx = parseInt(mm[1]) - 1; return mejoresTerceros[idx] ? mejoresTerceros[idx].team : null; }
+      return null;
+    }
+
+    // Resuelve "Gan. X" o "Per. X" usando los nombres ya resueltos de X
+    function resolveElimRef(label) {
+      let mm = label.match(/^Gan\. ([A-Z0-9]+)$/);
+      if (mm) {
+        const ref = mm[1]; const nm = resolved[ref];
+        if (!nm || !nm.local || !nm.visit) return null;
+        const w = elimWinner(nm.local, nm.visit, (resultados || {})[ref]);
+        return w ? w.win : null;
+      }
+      mm = label.match(/^Per\. ([A-Z0-9]+)$/);
+      if (mm) {
+        const ref = mm[1]; const nm = resolved[ref];
+        if (!nm || !nm.local || !nm.visit) return null;
+        const w = elimWinner(nm.local, nm.visit, (resultados || {})[ref]);
+        return w ? w.lose : null;
+      }
+      return null;
+    }
+
+    // Procesa los partidos en orden de fase (octavos→cuartos→semis→tercero→final)
+    const phaseOrder = ['octavos', 'cuartos', 'semis', 'tercero', 'final'];
+    phaseOrder.forEach(phase => {
+      MATCHES_ELIM.filter(m => m.phase === phase).forEach(m => {
+        const localReal = resolveGroupLabel(m.local) || resolveElimRef(m.local);
+        const visitReal = resolveGroupLabel(m.visit) || resolveElimRef(m.visit);
+        resolved[m.id] = { local: localReal || m.local, visit: visitReal || m.visit };
+        // Solo guardamos lo que realmente quedó determinado
+        if (localReal || visitReal) {
+          out[m.id] = { local: localReal || '', visit: visitReal || '' };
+        }
+      });
+    });
+
+    return out;
+  }
+
   // ── API PÚBLICA ────────────────────────────────────────────────
   return {
     MATCHES, MATCHES_GRUPOS, MATCHES_ELIM,
@@ -565,8 +679,9 @@ const CVX = (() => {
     getCurrentUser, setCurrentUser,
     saveUsuario, savePronostico, saveResultado, saveEspecial, saveEquiposElim,
     habilitarFase, cerrarFase,
-    buildRanking,
+    buildRanking, computeBracket, groupStandings,
     getCache, invalidateCache,
+    get cache() { return _cache; },
   };
 
 })();

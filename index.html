@@ -376,14 +376,15 @@ footer .fg{color:var(--verde);font-weight:600}
     <div style="margin-top:32px">
       <div class="stag" style="margin-bottom:10px">Predicciones especiales</div>
       <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Predice antes del inicio — puntos adicionales si aciertas.</p>
-      <div class="esp-grid">
+      <div id="esp-locked-msg" style="display:none;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;color:var(--muted);font-size:13px;margin-bottom:16px">🔒 Las predicciones especiales aún no están habilitadas. El administrador las abrirá pronto.</div>
+      <div class="esp-grid" id="esp-grid">
         <div class="esp-card"><span class="esp-label">🏆 Campeón del mundo</span><input id="esp-campeon" type="text" placeholder="Ej: Argentina" /></div>
         <div class="esp-card"><span class="esp-label">🥈 Subcampeón</span><input id="esp-sub" type="text" placeholder="Ej: Francia" /></div>
         <div class="esp-card"><span class="esp-label">👟 Goleador del torneo</span><input id="esp-gol" type="text" placeholder="Ej: Mbappé" /></div>
         <div class="esp-card"><span class="esp-label">⭐ Selección revelación</span><input id="esp-rev" type="text" placeholder="Ej: Marruecos" /></div>
       </div>
       <div style="text-align:center;margin-top:20px">
-        <button class="btn-p" onclick="saveEspeciales()">💾 Guardar predicciones especiales</button>
+        <button class="btn-p" id="esp-save-btn" onclick="saveEspeciales()">💾 Guardar predicciones especiales</button>
       </div>
     </div>
   </div>
@@ -435,7 +436,7 @@ footer .fg{color:var(--verde);font-weight:600}
 
 <div id="toast"></div>
 
-<script src="data.js?v=f912248"></script>
+<script src="data.js?v=v6bracket"></script>
 <script>
 // ══ STATE ══
 let currentUser = null;
@@ -500,11 +501,15 @@ async function doSearch(q) {
     </div>`).join('');
 }
 
-function selectUser(id, name, dept) {
+async function selectUser(id, name, dept) {
   currentUser = { id, name, dept };
   CVX.setCurrentUser(currentUser);
   closeLogin();
-  updateUI();
+  // Re-render para cargar los pronósticos guardados de este usuario
+  await renderGrupos();
+  await renderElim();
+  await updateUI();
+  await loadEspeciales();
   toast(`¡Bienvenido/a ${name}! ⚽`);
   confetti();
 }
@@ -514,14 +519,24 @@ async function doLoginNew() {
   const dept = document.getElementById('ln-dept').value;
   if (!name) { toast('⚠️ Ingresa tu nombre'); return; }
   if (!dept) { toast('⚠️ Selecciona tu área'); return; }
-  const id = 'u_' + name.toLowerCase().replace(/\s+/g,'_') + '_' + Date.now().toString(36).slice(-4);
+  // Si el nombre ya existe, reutilizamos su registro (evita duplicados y conserva pronósticos)
   toast('⏳ Registrando...');
-  currentUser = { id, name, dept };
-  await CVX.saveUsuario(currentUser);
+  const existentes = await CVX.buscarUsuario(name);
+  const match = (existentes || []).find(u => (u.name || '').toLowerCase().trim() === name.toLowerCase().trim());
+  if (match) {
+    currentUser = { id: match.id, name: match.name, dept: match.dept || dept };
+  } else {
+    const id = 'u_' + name.toLowerCase().replace(/\s+/g,'_') + '_' + Date.now().toString(36).slice(-4);
+    currentUser = { id, name, dept };
+    await CVX.saveUsuario(currentUser);
+  }
   CVX.setCurrentUser(currentUser);
   closeLogin();
+  await renderGrupos();
+  await renderElim();
   await updateUI();
-  toast(`¡Bienvenido/a ${name}! ⚽`);
+  await loadEspeciales();
+  toast(`¡Bienvenido/a ${currentUser.name}! ⚽`);
   confetti();
 }
 
@@ -531,13 +546,15 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (savedUser) { currentUser = savedUser; }
   setupReveal();
   showSkeletonLoader();
-  renderGrupos();
 
   try {
     await Promise.race([
       (async () => {
+        const _f0 = await CVX.getFases();
+        window._faseSig = JSON.stringify({ fases: _f0, equiposElim: (CVX.cache && CVX.cache.equiposElim) || {} });
+        await renderGrupos();
         await renderElim();
-        await updateUI();
+        await updateUI();        // refreshAllChips() rellena los pronósticos guardados
         await loadEspeciales();
       })(),
       new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000))
@@ -554,8 +571,18 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Refresh automático cada 10 segundos
   setInterval(async () => {
+    CVX.invalidateCache();
+    // Si cambió el estado de las fases o los equipos del cuadro, re-renderiza
+    const fases = await CVX.getFases();
+    const equiposElim = (CVX.cache && CVX.cache.equiposElim) || {};
+    const sig = JSON.stringify({ fases, equiposElim });
+    if (sig !== window._faseSig) {
+      window._faseSig = sig;
+      await renderGrupos();
+      await renderElim();
+    }
+    await applyEspecialesLock();
     if (currentUser) {
-      CVX.invalidateCache();
       await refreshAllChips();
       await updateUI();
     }
@@ -880,8 +907,35 @@ async function updatePhaseChip(phaseId) {
 }
 
 // ══ ESPECIALES ══
+// Devuelve true si las predicciones especiales están habilitadas por el admin.
+async function especialesHabilitadas() {
+  const fases = await CVX.getFases();
+  const f = fases.especiales || {};
+  return !!f.habilitada && !f.cerrada;
+}
+
+async function applyEspecialesLock() {
+  const habilitada = await especialesHabilitadas();
+  const grid = document.getElementById('esp-grid');
+  const btn = document.getElementById('esp-save-btn');
+  const msg = document.getElementById('esp-locked-msg');
+  const inputs = ['esp-campeon','esp-sub','esp-gol','esp-rev'].map(id => document.getElementById(id));
+  if (habilitada) {
+    if (msg) msg.style.display = 'none';
+    if (grid) grid.style.display = '';
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; btn.style.cursor = ''; }
+    inputs.forEach(i => { if (i) i.disabled = false; });
+  } else {
+    if (msg) msg.style.display = 'block';
+    if (grid) grid.style.display = 'none';
+    if (btn) { btn.disabled = true; btn.style.opacity = '.5'; btn.style.cursor = 'not-allowed'; }
+    inputs.forEach(i => { if (i) i.disabled = true; });
+  }
+}
+
 async function saveEspeciales() {
   if (!currentUser) { toast('⚠️ Inicia sesión primero'); openLogin(); return; }
+  if (!(await especialesHabilitadas())) { toast('🔒 Las predicciones especiales aún no están habilitadas'); return; }
   toast('⏳ Guardando...');
   await CVX.saveEspecial(currentUser.id, {
     campeon:   document.getElementById('esp-campeon').value,
@@ -893,6 +947,7 @@ async function saveEspeciales() {
   confetti();
 }
 async function loadEspeciales() {
+  await applyEspecialesLock();
   const user = CVX.getCurrentUser();
   if (!user) return;
   const all = await CVX.getEspeciales();
@@ -947,7 +1002,7 @@ async function renderElim() {
   container.innerHTML = '';
 
   const fases = await CVX.getFases();
-  const equiposElim = CVX.cache?.equiposElim || [];
+  const equiposElim = (CVX.cache && CVX.cache.equiposElim) || {};
   let faseUsuario = {};
   let allProns = {}, resultados = {};
   if (currentUser) {
@@ -967,9 +1022,9 @@ async function renderElim() {
     const yaGuardo = faseUsuario[ph.id];
     let matches = CVX.MATCHES_ELIM.filter(m => m.phase === ph.id);
 
-    // Cargar nombres de equipos si están disponibles
+    // Cargar nombres de equipos si están disponibles (equiposElim = { matchId: {local, visit} })
     matches = matches.map(m => {
-      const eq = equiposElim.find(e => e.matchId === m.id);
+      const eq = equiposElim[m.id];
       if (eq && (eq.local || eq.visit)) {
         return {
           ...m,
