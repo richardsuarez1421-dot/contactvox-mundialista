@@ -582,6 +582,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         await renderElim();
         await updateUI();        // refreshAllChips() rellena los pronósticos guardados
         await loadEspeciales();
+        // Force all reveal sections visible after successful load
+        document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
       })(),
       new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 25000))
     ]);
@@ -650,8 +652,10 @@ function setupReveal() {
   }
   const obs = new IntersectionObserver(entries => {
     entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
-  }, { threshold:.1 });
+  }, { threshold:.05 });
   reveals.forEach(el => obs.observe(el));
+  // Safety: force all reveals visible after 3s in case observer never fires
+  setTimeout(() => reveals.forEach(el => el.classList.add('visible')), 3000);
 }
 
 // ══ UPDATE UI ══
