@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Admin · Copa Mundial Contactvox 2026</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -85,6 +85,15 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(6,12,7,.95);
 .rin.set{border-color:var(--verde-d);background:rgba(0,200,83,.08)}
 .rsep{font-family:'Bebas Neue';font-size:18px;color:var(--muted)}
 .rimpact{font-size:10px;color:var(--verde);margin-top:4px;font-weight:600}
+
+/* ── CAMPO CLASIFICA ADMIN (eliminatoria) ── */
+.adm-clasifica{margin-top:7px;padding:5px 10px;background:rgba(255,143,0,.06);border:1px solid rgba(255,143,0,.2);border-radius:7px;display:none}
+.adm-clasifica.visible{display:block}
+.adm-clasifica-label{font-size:9px;letter-spacing:1px;color:var(--amber);text-transform:uppercase;font-weight:700;margin-bottom:4px}
+.adm-clasifica-opts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.adm-clasifica-opts label{display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;color:#c8e6c9}
+.adm-clasifica-opts input[type=radio]{accent-color:var(--amber)}
+
 .save-res-btn{width:100%;margin-top:10px;background:var(--amber);color:#000;border:none;border-radius:8px;padding:9px;font-family:'Oswald';font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:transform .15s,box-shadow .15s}
 .save-res-btn:hover{transform:scale(1.02);box-shadow:0 4px 16px rgba(255,143,0,.3)}
 
@@ -155,6 +164,29 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(6,12,7,.95);
 .elim-phase-arrow.open{transform:rotate(180deg)}
 .elim-phase-body{display:none;padding:10px 14px 14px}
 .elim-phase-body.open{display:block}
+
+/* CONTROL DE FASES */
+.fases-control-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-bottom:24px}
+.fase-control-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.fase-control-card.habilitada{border-color:var(--verde);background:rgba(0,200,83,.05)}
+.fcc-header{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.fcc-icon{font-size:24px}
+.fcc-info{flex:1}
+.fcc-name{font-family:'Oswald';font-size:14px;font-weight:600;color:#fff}
+.fcc-status{font-size:11px;color:var(--muted);margin-top:3px}
+.fcc-status.activa{color:var(--verde)}
+.fcc-btn{background:var(--amber);color:#000;border:none;border-radius:8px;padding:7px 14px;font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;cursor:pointer;transition:all .2s;width:100%}
+.fcc-btn:hover{transform:scale(1.03);box-shadow:0 4px 12px rgba(255,143,0,.3)}
+.fcc-btn.danger{background:rgba(255,23,68,.2);color:#ff6b6b;border:1px solid rgba(255,23,68,.3)}
+.fcc-btn.danger:hover{background:rgba(255,23,68,.3)}
+
+/* FORMULARIO EQUIPOS ELIMINATORIOS */
+.equipos-form{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px}
+.equipos-form h4{font-size:12px;letter-spacing:1px;color:var(--amber);text-transform:uppercase;font-weight:700;margin-bottom:12px}
+.eq-row{display:grid;grid-template-columns:80px 1fr 10px 1fr 80px;gap:8px;align-items:center;margin-bottom:10px;font-size:11px}
+.eq-row input{background:var(--dark);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter';outline:none}
+.eq-row input:focus{border-color:var(--amber)}
+.eq-vs{text-align:center;color:var(--muted);font-weight:600}
 </style>
 </head>
 <body>
@@ -175,7 +207,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(6,12,7,.95);
 <div class="admin-header">
   <div class="admin-badge">🔧 Panel de administración · Uso interno</div>
   <h1 class="admin-title">GESTIÓN <span>COPA MUNDIAL</span><br>CONTACTVOX 2026</h1>
-  <p class="admin-sub">Ingresa resultados oficiales · El ranking se actualiza automáticamente para todos los participantes</p>
+  <p class="admin-sub">Ingresa resultados oficiales (marcador global final, incluyendo prórroga y penales) · El ranking se actualiza automáticamente</p>
 </div>
 
 <!-- MAIN LAYOUT -->
@@ -199,6 +231,13 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(6,12,7,.95);
   <!-- MAIN -->
   <div class="main-panel">
 
+    <!-- CONTROL DE FASES -->
+    <div class="panel-section">
+      <div class="ps-title">⚙️ Control de fases del torneo</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Habilita y cierra las fases según el cronograma del torneo.</p>
+      <div class="fases-control-grid" id="fases-control"></div>
+    </div>
+
     <!-- RESULTADOS -->
     <div class="panel-section" id="resultados">
       <div class="ps-title">⚽ Cargar resultados por Grupo</div>
@@ -213,7 +252,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(6,12,7,.95);
       <div class="phase-toggle-grid" id="phase-toggle-grid"></div>
 
       <div class="ps-title" style="margin-top:8px">⚡ Ingresar resultados eliminatorios</div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Ingresa el marcador oficial (tiempo reglamentario). El sistema calcula automáticamente el clasificado.</p>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Ingresa el marcador global final (incluye prórroga y penales). Si hay empate en el marcador, aparecerá el campo "¿Quién clasificó?".</p>
       <div id="admin-elim-container"></div>
     </div>
 
@@ -237,9 +276,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(6,12,7,.95);
       <div class="add-part-row">
         <input type="text" id="ap-name" placeholder="Nombre completo" />
         <select id="ap-dept">
-          <option value="General">Área</option>
-          <option>Comercial</option><option>Operaciones</option><option>Tecnología</option>
-          <option>Talento Humano</option><option>Finanzas</option><option>Gerencia</option><option>Otro</option>
+          <option value="">Área</option>
+          <option>Soporte</option><option>Seguridades</option><option>Desarrollo</option>
+          <option>Diseño</option><option>QA</option><option>Proyectos</option>
+          <option>Gerencia</option><option>Comercial</option><option>Recursos Humanos</option>
+          <option>Innovación</option><option>Coordinación</option>
         </select>
         <button class="btn-add" onclick="addParticipant()">+ Agregar</button>
       </div>
@@ -250,7 +291,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(6,12,7,.95);
 
 <div id="toast"></div>
 
-<script src="data.js?v=f912247"></script>
+<script src="data.js?v=f912248"></script>
 <script>
 // ══ INIT ══
 window.addEventListener('DOMContentLoaded', async () => {
@@ -260,7 +301,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function refresh() {
-  await Promise.all([renderRanking(), renderParticipants(), updateSidebar()]);
+  await Promise.all([renderFasesControl(), renderRanking(), renderParticipants(), updateSidebar()]);
 }
 
 // ══ SIDEBAR STATS ══
@@ -331,12 +372,32 @@ async function renderAdminGrupos() {
   });
 }
 
+// Construye la fila de resultado.
+// Para fases eliminatorias agrega el campo "¿Quién clasificó?" (oculto por defecto,
+// se muestra dinámicamente cuando el marcador es empate).
 function buildAdminMatchRow(m, resultados, pronosticos) {
   const res = (resultados || {})[m.id] || {};
   const fl = CVX.FLAGS[m.local]  || '🏳️';
   const fv = CVX.FLAGS[m.visit] || '🏳️';
   const setSt = (res.l !== '' && res.l !== undefined) ? 'set' : '';
   const pronCount = Object.values(pronosticos || {}).filter(u => u[m.id]).length;
+  const isElim = m.phase !== 'grupo';
+
+  // Si ya hay resultado guardado con empate, restaurar el campo clasifica
+  const resEmpate = isElim && res.l !== undefined && res.l !== '' && String(res.l) === String(res.v);
+  const clasVisible = resEmpate ? 'visible' : '';
+  const clasLocalChecked = res.clasifica === 'local' ? 'checked' : '';
+  const clasVisitChecked = res.clasifica === 'visit' ? 'checked' : '';
+
+  const clasificaField = isElim ? `
+    <div class="adm-clasifica ${clasVisible}" id="adm-cls-row-${m.id}">
+      <div class="adm-clasifica-label">¿Quién clasificó?</div>
+      <div class="adm-clasifica-opts">
+        <label><input type="radio" name="adm-cls-${m.id}" value="local" ${clasLocalChecked}> ${fl} ${m.local}</label>
+        <label><input type="radio" name="adm-cls-${m.id}" value="visit" ${clasVisitChecked}> ${fv} ${m.visit}</label>
+      </div>
+    </div>` : '';
+
   return `
   <div class="res-row" id="ar-${m.id}">
     <div class="rteam">
@@ -354,6 +415,7 @@ function buildAdminMatchRow(m, resultados, pronosticos) {
           placeholder="—" value="${res.v !== undefined ? res.v : ''}"
           onchange="onResChange('${m.id}')" />
       </div>
+      ${clasificaField}
       <div class="rimpact" id="imp-${m.id}">${pronCount} pronóstico${pronCount!==1?'s':''}</div>
     </div>
     <div class="rteam rv">
@@ -375,23 +437,60 @@ function toggleAdmGrupo(g) {
 async function onResChange(matchId) {
   const l = document.getElementById(`rl-${matchId}`)?.value;
   const v = document.getElementById(`rv-${matchId}`)?.value;
-  if (l !== '' && v !== '') {
-    document.getElementById(`rl-${matchId}`).classList.add('set');
-    document.getElementById(`rv-${matchId}`).classList.add('set');
-    const m = CVX.MATCHES.find(x => x.id === matchId);
-    const phase = m ? m.phase : 'grupo';
-    const prons = await CVX.getPronosticos();
-    let exactos = 0, aciertos = 0;
-    Object.values(prons).forEach(u => {
-      const p = u[matchId];
-      if (!p) return;
-      const r = CVX.calcPoints(p, {l, v}, phase);
-      if (r.label === 'exacto') exactos++;
-      else if (['ganador','ganador_diff','clasificado'].includes(r.label)) aciertos++;
-    });
-    const imp = document.getElementById(`imp-${matchId}`);
-    if (imp) imp.textContent = `+${exactos} exactos · +${aciertos} aciertos`;
+  if (l === '' || v === '') return;
+
+  document.getElementById(`rl-${matchId}`).classList.add('set');
+  document.getElementById(`rv-${matchId}`).classList.add('set');
+
+  const m = CVX.MATCHES.find(x => x.id === matchId);
+  const phase = m ? m.phase : 'grupo';
+  const isElim = phase !== 'grupo';
+
+  // Mostrar/ocultar campo clasifica para eliminatoria según si hay empate
+  if (isElim) {
+    const clsRow = document.getElementById(`adm-cls-row-${matchId}`);
+    if (clsRow) {
+      if (String(l) === String(v)) {
+        clsRow.classList.add('visible');
+      } else {
+        clsRow.classList.remove('visible');
+        // Deseleccionar radios si no hay empate (el clasificado se detecta automáticamente)
+        const radios = document.querySelectorAll(`input[name="adm-cls-${matchId}"]`);
+        radios.forEach(r => r.checked = false);
+      }
+    }
   }
+
+  // Calcular impacto en pronósticos existentes
+  const prons = await CVX.getPronosticos();
+  let exactos = 0, aciertos = 0;
+
+  // Para el impacto, usamos clasifica='local' como fallback temporal si hay empate
+  const clasifica = String(l) === String(v) ? (_getAdmClasifica(matchId) || 'local') : '';
+  const resTemp = { l, v, clasifica };
+
+  Object.values(prons).forEach(u => {
+    const p = u[matchId];
+    if (!p) return;
+    const r = CVX.calcPoints(p, resTemp, phase);
+    if (r.label === 'exacto') exactos++;
+    else if (['ganador','clasificado'].includes(r.label)) aciertos++;
+  });
+
+  const imp = document.getElementById(`imp-${matchId}`);
+  if (imp) {
+    if (isElim) {
+      imp.textContent = `+${exactos} exactos · +${aciertos} clasificados`;
+    } else {
+      imp.textContent = `+${exactos} exactos · +${aciertos} aciertos`;
+    }
+  }
+}
+
+// Obtiene el valor del radio "¿Quién clasificó?" en el admin
+function _getAdmClasifica(matchId) {
+  const checked = document.querySelector(`input[name="adm-cls-${matchId}"]:checked`);
+  return checked ? checked.value : null;
 }
 
 async function saveGroupResults(g) {
@@ -518,7 +617,14 @@ async function saveElimResults(phaseId) {
   matches.forEach(m => {
     const l = document.getElementById(`rl-${m.id}`)?.value;
     const v = document.getElementById(`rv-${m.id}`)?.value;
-    if (l !== '' && v !== '') saves.push(CVX.saveResultado(m.id, l, v));
+    if (l === '' || v === '') return;
+
+    // Si hay empate, se requiere clasifica
+    let clasifica = null;
+    if (String(l) === String(v)) {
+      clasifica = _getAdmClasifica(m.id);
+    }
+    saves.push(CVX.saveResultado(m.id, l, v, clasifica || undefined));
   });
   toast('⏳ Guardando...');
   await Promise.all(saves);
@@ -598,8 +704,6 @@ async function addParticipant() {
 }
 
 function deleteParticipant(id) {
-  // No existe endpoint de eliminación en la API de Google Sheets.
-  // Para eliminar un participante, hazlo directamente en la hoja de cálculo.
   toast('⚠️ La eliminación debe hacerse directo en Google Sheets');
 }
 
@@ -618,6 +722,53 @@ async function exportCSV() {
   a.click(); URL.revokeObjectURL(url);
   toast('📥 CSV exportado');
   logActivity('Ranking exportado a CSV');
+}
+
+// ══ CONTROL DE FASES ══
+async function renderFasesControl() {
+  const grid = document.getElementById('fases-control');
+  if (!grid) return;
+
+  const fases = await CVX.getFases();
+  grid.innerHTML = CVX.PHASES.filter(ph => ph.id !== 'grupo').map(ph => {
+    const f = fases[ph.id] || { habilitada: false, cerrada: false };
+    const status = f.cerrada ? '🔒 Cerrada' : f.habilitada ? '✅ Habilitada' : '🔓 Bloqueada';
+    const statusClass = f.habilitada && !f.cerrada ? 'activa' : '';
+    const btnText = f.cerrada ? 'Reabrira' : f.habilitada ? 'Cerrar' : 'Habilitar';
+    const btnClass = f.habilitada && !f.cerrada ? 'danger' : '';
+    const btnAction = f.cerrada ? 'habilitarFase' : f.habilitada ? 'cerrarFase' : 'habilitarFase';
+
+    return `
+      <div class="fase-control-card ${f.habilitada && !f.cerrada ? 'habilitada' : ''}">
+        <div class="fcc-header">
+          <div class="fcc-icon">${ph.icon}</div>
+          <div class="fcc-info">
+            <div class="fcc-name">${ph.label}</div>
+            <div class="fcc-status ${statusClass}">${status}</div>
+          </div>
+        </div>
+        <button class="fcc-btn ${btnClass}" onclick="toggleFase('${ph.id}', '${btnAction}')">${btnText}</button>
+      </div>`;
+  }).join('');
+}
+
+async function toggleFase(phaseId, action) {
+  const confirmMsg = action === 'cerrarFase'
+    ? `¿Cerrar esta fase? Los colaboradores ya no podrán pronosticar.`
+    : `¿Habilitar esta fase? Los colaboradores podrán pronosticar estos partidos.`;
+
+  if (!confirm(confirmMsg)) return;
+
+  const fn = action === 'cerrarFase' ? CVX.cerrarFase : CVX.habilitarFase;
+  toast('⏳ Actualizando...');
+  const r = await fn(phaseId);
+  if (r && r.ok) {
+    toast(`✅ Fase ${action === 'cerrarFase' ? 'cerrada' : 'habilitada'}`);
+    logActivity(`${CVX.PHASES.find(p => p.id === phaseId)?.label || phaseId}: ${action === 'cerrarFase' ? 'cerrada' : 'habilitada'}`);
+    await renderFasesControl();
+  } else {
+    toast('⚠️ Error al actualizar la fase');
+  }
 }
 
 // ══ TOAST ══
