@@ -595,14 +595,10 @@ async function renderGrupos() {
   const container = document.getElementById('grupos-container');
   container.innerHTML = '';
 
-  const [fases, resultados] = await Promise.all([CVX.getFases(), CVX.getResultados()]);
+  const [fases, resultados, pronosticos] = await Promise.all([CVX.getFases(), CVX.getResultados(), CVX.getPronosticos()]);
   const faseGrupo = fases.grupo || {};
   const grupoBloqueado = faseGrupo.cerrada || !faseGrupo.habilitada;
-
-  let faseUsuario = {};
-  if (currentUser) {
-    faseUsuario = await CVX.getFaseUsuario(currentUser.id);
-  }
+  const userProns = (currentUser && pronosticos[currentUser.id]) || {};
 
   CVX.GROUPS.forEach((g, gi) => {
     const matches = CVX.MATCHES_GRUPOS.filter(m => m.group === g);
@@ -613,7 +609,8 @@ async function renderGrupos() {
     acc.className = 'grupo-acc';
     acc.id = `acc-${g}`;
 
-    const yaGuardo = faseUsuario.grupo;
+    // yaGuardo es true solo si el usuario ya guardó ESTE grupo específico
+    const yaGuardo = matches.some(m => userProns[m.id]);
     const estadoTexto = grupoBloqueado ? (faseGrupo.cerrada ? '🔒 Fase cerrada' : '🔒 Próximamente') : (yaGuardo ? '✅ Pronósticos guardados' : '🔓 Abierta');
 
     acc.innerHTML = `
@@ -725,10 +722,12 @@ function _getClasifica(matchId) {
 
 async function saveGroup(g) {
   if (!currentUser) { toast('⚠️ Inicia sesión primero'); openLogin(); return; }
-  // Verificar en el servidor que el usuario no haya enviado ya esta fase
-  const faseUsuario = await CVX.getFaseUsuario(currentUser.id);
-  if (faseUsuario.grupo) {
-    toast('⚠️ Ya enviaste tus pronósticos. No se pueden modificar.');
+  // Verificar por grupo específico si el usuario ya guardó ESTE grupo
+  const prons = await CVX.getPronosticos();
+  const userProns = (prons[currentUser.id]) || {};
+  const matchesDelGrupo = CVX.MATCHES_GRUPOS.filter(m => m.group === g);
+  if (matchesDelGrupo.some(m => userProns[m.id])) {
+    toast(`⚠️ Ya enviaste tus pronósticos del Grupo ${g}. No se pueden modificar.`);
     return;
   }
   const matches = CVX.MATCHES_GRUPOS.filter(m => m.group === g);
