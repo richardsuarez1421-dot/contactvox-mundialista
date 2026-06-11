@@ -152,6 +152,9 @@ h2.stitle{font-family:'Bebas Neue';font-size:clamp(30px,5vw,50px);letter-spacing
 /* Save btn per group */
 .save-group-btn{margin-top:12px;width:100%;background:var(--verde);color:#000;border:none;border-radius:10px;padding:10px;font-family:'Oswald';font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:transform .15s,box-shadow .15s}
 .save-group-btn:hover{transform:scale(1.02);box-shadow:0 6px 20px rgba(0,200,83,.3)}
+.match-save-btn{margin-top:8px;width:100%;background:var(--verde);color:#000;border:none;border-radius:8px;padding:7px 14px;font-family:'Oswald';font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:background .2s,transform .15s}
+.match-save-btn:hover:not(:disabled){background:#00e676;transform:scale(1.02)}
+.match-save-btn.saved,.match-save-btn:disabled{background:rgba(0,200,83,.15);color:var(--verde);cursor:not-allowed;opacity:.8}
 
 /* ── ESPECIALES ── */
 .esp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
@@ -609,9 +612,14 @@ async function renderGrupos() {
     acc.className = 'grupo-acc';
     acc.id = `acc-${g}`;
 
-    // yaGuardo es true solo si el usuario ya guardó ESTE grupo específico
-    const yaGuardo = matches.some(m => userProns[m.id]);
-    const estadoTexto = grupoBloqueado ? (faseGrupo.cerrada ? '🔒 Fase cerrada' : '🔒 Próximamente') : (yaGuardo ? '✅ Pronósticos guardados' : '🔓 Abierta');
+    // Contar cuántos partidos guardó el usuario en este grupo (excluyendo los con resultado oficial)
+    const guardados = matches.filter(m => userProns[m.id]).length;
+    const sinResultado = matches.filter(m => { const r = resultados[m.id]; return !(r && r.l !== '' && r.l !== undefined); }).length;
+    const estadoTexto = grupoBloqueado
+      ? (faseGrupo.cerrada ? '🔒 Fase cerrada' : '🔒 Próximamente')
+      : guardados === 0 ? '🔓 Abierta'
+      : guardados >= sinResultado ? '✅ Completo'
+      : `${guardados}/${sinResultado} guardados`;
 
     acc.innerHTML = `
       <div class="grupo-hdr ${gi===0?'open':''}" onclick="toggleGrupo('${g}')">
@@ -629,8 +637,7 @@ async function renderGrupos() {
         </div>
       </div>
       <div class="grupo-body ${gi===0?'open':''}" id="gbody-${g}">
-        ${matches.map(m => buildMatchRow(m, yaGuardo, resultados)).join('')}
-        <button class="save-group-btn" ${grupoBloqueado || yaGuardo ? 'disabled style="opacity:.5;cursor:not-allowed"' : ''} onclick="saveGroup('${g}')">${yaGuardo ? '✅ Guardado' : '💾 Guardar pronósticos del Grupo ' + g}</button>
+        ${matches.map(m => buildMatchRow(m, grupoBloqueado, resultados, userProns)).join('')}
       </div>`;
     container.appendChild(acc);
   });
@@ -639,24 +646,35 @@ async function renderGrupos() {
 // Construye la tarjeta de partido.
 // bloqueado: fase ya guardada o cerrada
 // resultados: mapa de resultados oficiales — si el partido ya tiene resultado, los inputs se bloquean
-function buildMatchRow(m, bloqueado, resultados) {
+function buildMatchRow(m, bloqueado, resultados, userProns) {
   const fl = CVX.FLAGS[m.local] || '🏳️';
   const fv = CVX.FLAGS[m.visit] || '🏳️';
   const isElim = m.phase !== 'grupo';
   const res = resultados && resultados[m.id];
   const tieneResultado = res && res.l !== '' && res.l !== undefined;
-  const finalBloqueado = bloqueado || tieneResultado;
+  const yaGuardoEste = !!(userProns && userProns[m.id]);
+  const finalBloqueado = bloqueado || tieneResultado || yaGuardoEste;
   const disabledAttr = finalBloqueado ? 'disabled style="opacity:.6;cursor:not-allowed"' : '';
+
+  // Pre-rellenar con valores guardados del usuario
+  const pronL = yaGuardoEste ? (userProns[m.id].l || '') : '';
+  const pronV = yaGuardoEste ? (userProns[m.id].v || '') : '';
+  const pronCls = yaGuardoEste ? (userProns[m.id].clasifica || '') : '';
 
   const clasificaField = isElim ? `
     <div class="clasifica-field" id="cls-row-${m.id}">
       <div class="clasifica-label">¿Quién clasifica?</div>
       <div class="clasifica-opts">
-        <label><input type="radio" name="cls-${m.id}" value="local" ${disabledAttr ? 'disabled' : ''}> ${fl} ${m.local}</label>
-        <label><input type="radio" name="cls-${m.id}" value="visit" ${disabledAttr ? 'disabled' : ''}> ${fv} ${m.visit}</label>
+        <label><input type="radio" name="cls-${m.id}" value="local" ${finalBloqueado ? 'disabled' : ''} ${pronCls==='local'?'checked':''}> ${fl} ${m.local}</label>
+        <label><input type="radio" name="cls-${m.id}" value="visit" ${finalBloqueado ? 'disabled' : ''} ${pronCls==='visit'?'checked':''}> ${fv} ${m.visit}</label>
       </div>
       <div class="clasifica-warn" id="cls-warn-${m.id}">⚠️ Selecciona quién clasifica</div>
     </div>` : '';
+
+  // Botón por partido (no se muestra si ya hay resultado oficial)
+  const saveBtn = tieneResultado ? '' : yaGuardoEste
+    ? `<button class="match-save-btn saved" disabled>✅ Guardado</button>`
+    : `<button class="match-save-btn" id="save-btn-${m.id}" onclick="saveMatch('${m.id}','${m.phase}')">💾 Guardar</button>`;
 
   return `
   <div class="match-row" id="mr-${m.id}">
@@ -668,15 +686,16 @@ function buildMatchRow(m, bloqueado, resultados) {
       <div class="mdate">${m.date}</div>
       <div class="msede">${m.sede}</div>
       <div class="score-row-inp">
-        <input class="sin" type="number" min="0" max="20" id="pl-${m.id}" placeholder="—"
+        <input class="sin" type="number" min="0" max="20" id="pl-${m.id}" placeholder="—" value="${pronL}"
           ${disabledAttr}
           onchange="onPronChange('${m.id}')" />
         <span class="ssep">:</span>
-        <input class="sin" type="number" min="0" max="20" id="pv-${m.id}" placeholder="—"
+        <input class="sin" type="number" min="0" max="20" id="pv-${m.id}" placeholder="—" value="${pronV}"
           ${disabledAttr}
           onchange="onPronChange('${m.id}')" />
       </div>
       ${clasificaField}
+      ${saveBtn}
       <div id="chip-${m.id}"></div>
       <div class="res-oficial" id="res-${m.id}"></div>
     </div>
@@ -720,52 +739,59 @@ function _getClasifica(matchId) {
   return checked ? checked.value : null;
 }
 
-async function saveGroup(g) {
+async function saveMatch(matchId, fase) {
   if (!currentUser) { toast('⚠️ Inicia sesión primero'); openLogin(); return; }
-  // Verificar por grupo específico si el usuario ya guardó ESTE grupo
-  const [prons, resultados] = await Promise.all([CVX.getPronosticos(), CVX.getResultados()]);
+
+  const prons = await CVX.getPronosticos();
   const userProns = (prons[currentUser.id]) || {};
-  const matchesDelGrupo = CVX.MATCHES_GRUPOS.filter(m => m.group === g);
-  if (matchesDelGrupo.some(m => userProns[m.id])) {
-    toast(`⚠️ Ya enviaste tus pronósticos del Grupo ${g}. No se pueden modificar.`);
+  if (userProns[matchId]) {
+    toast('⚠️ Ya guardaste este partido. No se puede modificar.');
     return;
   }
-  const matches = CVX.MATCHES_GRUPOS.filter(m => m.group === g);
-  // Validar que todos los partidos SIN resultado oficial tengan pronóstico
-  const vacios = [];
-  matches.forEach(m => {
-    const res = resultados[m.id];
-    const tieneResultado = res && res.l !== '' && res.l !== undefined;
-    if (tieneResultado) return; // bloqueado por resultado oficial, no exigir
-    const l = document.getElementById(`pl-${m.id}`)?.value;
-    const v = document.getElementById(`pv-${m.id}`)?.value;
-    if (l === '' || v === '') vacios.push(m.id);
-  });
-  if (vacios.length > 0) {
-    toast(`⚠️ Faltan ${vacios.length} partido${vacios.length > 1 ? 's' : ''} por pronosticar en el Grupo ${g}`);
-    vacios.forEach(id => {
-      const el = document.getElementById(`mr-${id}`);
-      if (el) { el.style.outline = '2px solid var(--rojo)'; setTimeout(() => el.style.outline = '', 3000); }
-    });
+
+  const l = document.getElementById(`pl-${matchId}`)?.value ?? '';
+  const v = document.getElementById(`pv-${matchId}`)?.value ?? '';
+  if (l === '' || v === '') {
+    toast('⚠️ Completa el marcador antes de guardar');
+    const mr = document.getElementById(`mr-${matchId}`);
+    if (mr) { mr.style.outline = '2px solid var(--rojo)'; setTimeout(() => mr.style.outline = '', 3000); }
     return;
   }
-  const btn = document.querySelector(`#gbody-${g} .save-group-btn`);
-  if (btn) { btn.textContent = '⏳ Guardando...'; btn.disabled = true; }
-  const saves = [];
-  matches.forEach(m => {
-    const res = resultados[m.id];
-    const tieneResultado = res && res.l !== '' && res.l !== undefined;
-    if (tieneResultado) return; // no guardar pronóstico de partido ya jugado
-    const l = document.getElementById(`pl-${m.id}`)?.value;
-    const v = document.getElementById(`pv-${m.id}`)?.value;
-    if (l !== '' && v !== '') saves.push(CVX.savePronostico(currentUser.id, m.id, l, v, 'grupo'));
-  });
-  await Promise.all(saves);
-  if (btn) { btn.textContent = `✅ Guardado`; btn.disabled = true; }
-  toast(`✅ ${saves.length} pronósticos del Grupo ${g} guardados`);
-  await new Promise(r => setTimeout(r, 1000));
-  await updateUI();
-  if (saves.length > 0) confetti();
+
+  let clasifica = '';
+  if (fase !== 'grupo') {
+    clasifica = _getClasifica(matchId);
+    if (!clasifica) {
+      const warn = document.getElementById(`cls-warn-${matchId}`);
+      if (warn) warn.style.display = 'block';
+      toast('⚠️ Selecciona quién clasifica antes de guardar');
+      return;
+    }
+  }
+
+  const btn = document.getElementById(`save-btn-${matchId}`);
+  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+
+  const r = await CVX.savePronostico(currentUser.id, matchId, l, v, fase, clasifica);
+
+  if (r && r.ok) {
+    // Bloquear inputs y actualizar botón sin recargar toda la UI
+    const inpL = document.getElementById(`pl-${matchId}`);
+    const inpV = document.getElementById(`pv-${matchId}`);
+    if (inpL) { inpL.disabled = true; inpL.style.opacity = '.6'; inpL.style.cursor = 'not-allowed'; }
+    if (inpV) { inpV.disabled = true; inpV.style.opacity = '.6'; inpV.style.cursor = 'not-allowed'; }
+    document.querySelectorAll(`input[name="cls-${matchId}"]`).forEach(r => r.disabled = true);
+    if (btn) { btn.textContent = '✅ Guardado'; btn.classList.add('saved'); }
+    toast('✅ Pronóstico guardado');
+    await updateChip(matchId, l, v, clasifica);
+    const m = CVX.MATCHES.find(x => x.id === matchId);
+    if (m?.phase === 'grupo') await updateGroupChip(m.group);
+    else if (m) await updatePhaseChip(m.phase);
+    confetti();
+  } else {
+    if (btn) { btn.textContent = '💾 Guardar'; btn.disabled = false; }
+    toast('⚠️ Error al guardar, intenta de nuevo');
+  }
 }
 
 // ══ CHIPS ══
@@ -1043,8 +1069,7 @@ async function renderElim() {
     }
 
     const bodyContent = habilitada
-      ? matches.map(m => buildMatchRow(m, yaGuardo, resultados)).join('')
-        + `<button class="save-group-btn" ${faseData.cerrada || yaGuardo ? 'disabled style="opacity:.5;cursor:not-allowed"' : ''} onclick="savePhase('${ph.id}')">${yaGuardo ? '✅ Guardado' : '💾 Guardar pronósticos — ' + ph.label}</button>`
+      ? matches.map(m => buildMatchRow(m, faseData.cerrada, resultados, prons)).join('')
       : `<div class="fase-locked-msg"><span class="lk-icon">🔒</span><p>Esta fase aún no ha comenzado.<br>El administrador la habilitará cuando llegue el momento.</p></div>`;
 
     acc.innerHTML = `
@@ -1094,76 +1119,6 @@ function toggleFase(phaseId) {
   }
 }
 
-async function savePhase(phaseId) {
-  if (!currentUser) { toast('⚠️ Inicia sesión primero'); openLogin(); return; }
-  // Verificar en el servidor que el usuario no haya enviado ya esta fase
-  const [faseUsuario, resultados] = await Promise.all([CVX.getFaseUsuario(currentUser.id), CVX.getResultados()]);
-  if (faseUsuario[phaseId]) {
-    toast('⚠️ Ya enviaste tus pronósticos de esta fase. No se pueden modificar.');
-    return;
-  }
-  const matches = CVX.MATCHES_ELIM.filter(m => m.phase === phaseId);
-
-  // Validar que todos los partidos SIN resultado oficial tengan ambos marcadores
-  const vacios = [];
-  matches.forEach(m => {
-    const res = resultados[m.id];
-    const tieneResultado = res && res.l !== '' && res.l !== undefined;
-    if (tieneResultado) return; // bloqueado por resultado oficial, no exigir
-    const l = document.getElementById(`pl-${m.id}`)?.value;
-    const v = document.getElementById(`pv-${m.id}`)?.value;
-    if (l === '' || v === '') vacios.push(m.id);
-  });
-  if (vacios.length > 0) {
-    const ph = CVX.PHASES.find(p => p.id === phaseId);
-    toast(`⚠️ Faltan ${vacios.length} partido${vacios.length > 1 ? 's' : ''} por pronosticar en ${ph ? ph.label : phaseId}`);
-    vacios.forEach(id => {
-      const el = document.getElementById(`mr-${id}`);
-      if (el) { el.style.outline = '2px solid var(--rojo)'; setTimeout(() => el.style.outline = '', 3000); }
-    });
-    return;
-  }
-
-  // Validar que todos los partidos (sin resultado oficial) tengan clasifica seleccionado
-  let missing = false;
-  matches.forEach(m => {
-    const res = resultados[m.id];
-    const tieneResultado = res && res.l !== '' && res.l !== undefined;
-    if (tieneResultado) return;
-    const clasifica = _getClasifica(m.id);
-    const warn = document.getElementById(`cls-warn-${m.id}`);
-    if (!clasifica) {
-      missing = true;
-      if (warn) warn.style.display = 'block';
-    } else {
-      if (warn) warn.style.display = 'none';
-    }
-  });
-  if (missing) {
-    toast('⚠️ Selecciona quién clasifica en cada partido que pronosticaste');
-    return;
-  }
-
-  const saves = [];
-  matches.forEach(m => {
-    const res = resultados[m.id];
-    const tieneResultado = res && res.l !== '' && res.l !== undefined;
-    if (tieneResultado) return; // no guardar pronóstico de partido ya jugado
-    const l = document.getElementById(`pl-${m.id}`)?.value;
-    const v = document.getElementById(`pv-${m.id}`)?.value;
-    const clasifica = _getClasifica(m.id);
-    if (l !== '' && v !== '') saves.push(CVX.savePronostico(currentUser.id, m.id, l, v, phaseId, clasifica));
-  });
-  toast('⏳ Guardando...');
-  await Promise.all(saves);
-  const ph = CVX.PHASES.find(p => p.id === phaseId);
-  const btnContainer = document.querySelector(`#fbody-${phaseId} .save-group-btn`);
-  if (btnContainer) { btnContainer.textContent = '✅ Guardado'; btnContainer.disabled = true; }
-  toast(`✅ ${saves.length} pronósticos de ${ph ? ph.label : phaseId} guardados`);
-  await new Promise(r => setTimeout(r, 1000));
-  await updateUI();
-  if (saves.length > 0) confetti();
-}
 
 // ══ TOAST ══
 function toast(msg) {
