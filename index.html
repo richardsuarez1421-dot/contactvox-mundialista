@@ -152,9 +152,12 @@ h2.stitle{font-family:'Bebas Neue';font-size:clamp(30px,5vw,50px);letter-spacing
 /* Save btn per group */
 .save-group-btn{margin-top:12px;width:100%;background:var(--verde);color:#000;border:none;border-radius:10px;padding:10px;font-family:'Oswald';font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:transform .15s,box-shadow .15s}
 .save-group-btn:hover{transform:scale(1.02);box-shadow:0 6px 20px rgba(0,200,83,.3)}
-.match-save-btn{margin-top:8px;width:100%;background:var(--verde);color:#000;border:none;border-radius:8px;padding:7px 14px;font-family:'Oswald';font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:background .2s,transform .15s}
+.match-btn-row{margin-top:8px;display:flex;gap:6px}
+.match-save-btn{flex:1;background:var(--verde);color:#000;border:none;border-radius:8px;padding:7px 14px;font-family:'Oswald';font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:background .2s,transform .15s}
 .match-save-btn:hover:not(:disabled){background:#00e676;transform:scale(1.02)}
 .match-save-btn.saved,.match-save-btn:disabled{background:rgba(0,200,83,.15);color:var(--verde);cursor:not-allowed;opacity:.8}
+.match-edit-btn{background:rgba(255,255,255,.08);color:var(--fg);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:7px 12px;font-family:'Oswald';font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:background .2s,transform .15s;white-space:nowrap}
+.match-edit-btn:hover{background:rgba(255,255,255,.15);transform:scale(1.02)}
 
 /* ── ESPECIALES ── */
 .esp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
@@ -637,7 +640,7 @@ async function renderGrupos() {
         </div>
       </div>
       <div class="grupo-body ${gi===0?'open':''}" id="gbody-${g}">
-        ${matches.map(m => buildMatchRow(m, grupoBloqueado, resultados, userProns)).join('')}
+        ${matches.map(m => buildMatchRow(m, grupoBloqueado, resultados, userProns, faseGrupo.cerrada)).join('')}
       </div>`;
     container.appendChild(acc);
   });
@@ -646,7 +649,8 @@ async function renderGrupos() {
 // Construye la tarjeta de partido.
 // bloqueado: fase ya guardada o cerrada
 // resultados: mapa de resultados oficiales — si el partido ya tiene resultado, los inputs se bloquean
-function buildMatchRow(m, bloqueado, resultados, userProns) {
+// faseCerrada: true si el admin cerró la fase (impide edición)
+function buildMatchRow(m, bloqueado, resultados, userProns, faseCerrada) {
   const fl = CVX.FLAGS[m.local] || '🏳️';
   const fv = CVX.FLAGS[m.visit] || '🏳️';
   const isElim = m.phase !== 'grupo';
@@ -671,10 +675,18 @@ function buildMatchRow(m, bloqueado, resultados, userProns) {
       <div class="clasifica-warn" id="cls-warn-${m.id}">⚠️ Selecciona quién clasifica</div>
     </div>` : '';
 
-  // Botón por partido (no se muestra si ya hay resultado oficial)
-  const saveBtn = tieneResultado ? '' : yaGuardoEste
-    ? `<button class="match-save-btn saved" disabled>✅ Guardado</button>`
-    : `<button class="match-save-btn" id="save-btn-${m.id}" onclick="saveMatch('${m.id}','${m.phase}')">💾 Guardar</button>`;
+  // Área de botones: no se muestra si ya hay resultado oficial
+  let btnHtml = '';
+  if (!tieneResultado) {
+    if (yaGuardoEste) {
+      const editBtn = (!faseCerrada && !bloqueado)
+        ? `<button class="match-edit-btn" onclick="editMatch('${m.id}','${m.phase}')">✏️ Editar</button>`
+        : '';
+      btnHtml = `<div class="match-btn-row" id="btn-area-${m.id}"><button class="match-save-btn saved" disabled>✅ Guardado</button>${editBtn}</div>`;
+    } else if (!bloqueado) {
+      btnHtml = `<div class="match-btn-row" id="btn-area-${m.id}"><button class="match-save-btn" id="save-btn-${m.id}" onclick="saveMatch('${m.id}','${m.phase}')">💾 Guardar</button></div>`;
+    }
+  }
 
   return `
   <div class="match-row" id="mr-${m.id}">
@@ -695,7 +707,7 @@ function buildMatchRow(m, bloqueado, resultados, userProns) {
           onchange="onPronChange('${m.id}')" />
       </div>
       ${clasificaField}
-      ${saveBtn}
+      ${btnHtml}
       <div id="chip-${m.id}"></div>
       <div class="res-oficial" id="res-${m.id}"></div>
     </div>
@@ -742,13 +754,6 @@ function _getClasifica(matchId) {
 async function saveMatch(matchId, fase) {
   if (!currentUser) { toast('⚠️ Inicia sesión primero'); openLogin(); return; }
 
-  const prons = await CVX.getPronosticos();
-  const userProns = (prons[currentUser.id]) || {};
-  if (userProns[matchId]) {
-    toast('⚠️ Ya guardaste este partido. No se puede modificar.');
-    return;
-  }
-
   const l = document.getElementById(`pl-${matchId}`)?.value ?? '';
   const v = document.getElementById(`pv-${matchId}`)?.value ?? '';
   if (l === '' || v === '') {
@@ -775,13 +780,20 @@ async function saveMatch(matchId, fase) {
   const r = await CVX.savePronostico(currentUser.id, matchId, l, v, fase, clasifica);
 
   if (r && r.ok) {
-    // Bloquear inputs y actualizar botón sin recargar toda la UI
+    // Bloquear inputs
     const inpL = document.getElementById(`pl-${matchId}`);
     const inpV = document.getElementById(`pv-${matchId}`);
     if (inpL) { inpL.disabled = true; inpL.style.opacity = '.6'; inpL.style.cursor = 'not-allowed'; }
     if (inpV) { inpV.disabled = true; inpV.style.opacity = '.6'; inpV.style.cursor = 'not-allowed'; }
-    document.querySelectorAll(`input[name="cls-${matchId}"]`).forEach(r => r.disabled = true);
-    if (btn) { btn.textContent = '✅ Guardado'; btn.classList.add('saved'); }
+    document.querySelectorAll(`input[name="cls-${matchId}"]`).forEach(rb => rb.disabled = true);
+    // Actualizar área de botones con Guardado + Editar (si fase no está cerrada)
+    const fases = await CVX.getFases();
+    const faseCerrada = !!(fases[fase] && fases[fase].cerrada);
+    const editBtn = !faseCerrada
+      ? `<button class="match-edit-btn" onclick="editMatch('${matchId}','${fase}')">✏️ Editar</button>`
+      : '';
+    const btnArea = document.getElementById(`btn-area-${matchId}`);
+    if (btnArea) btnArea.innerHTML = `<button class="match-save-btn saved" disabled>✅ Guardado</button>${editBtn}`;
     toast('✅ Pronóstico guardado');
     await updateChip(matchId, l, v, clasifica);
     const m = CVX.MATCHES.find(x => x.id === matchId);
@@ -792,6 +804,16 @@ async function saveMatch(matchId, fase) {
     if (btn) { btn.textContent = '💾 Guardar'; btn.disabled = false; }
     toast('⚠️ Error al guardar, intenta de nuevo');
   }
+}
+
+function editMatch(matchId, fase) {
+  const inpL = document.getElementById(`pl-${matchId}`);
+  const inpV = document.getElementById(`pv-${matchId}`);
+  if (inpL) { inpL.disabled = false; inpL.style.opacity = ''; inpL.style.cursor = ''; }
+  if (inpV) { inpV.disabled = false; inpV.style.opacity = ''; inpV.style.cursor = ''; }
+  document.querySelectorAll(`input[name="cls-${matchId}"]`).forEach(rb => rb.disabled = false);
+  const btnArea = document.getElementById(`btn-area-${matchId}`);
+  if (btnArea) btnArea.innerHTML = `<button class="match-save-btn" id="save-btn-${matchId}" onclick="saveMatch('${matchId}','${fase}')">💾 Guardar</button>`;
 }
 
 // ══ CHIPS ══
@@ -1069,7 +1091,7 @@ async function renderElim() {
     }
 
     const bodyContent = habilitada
-      ? matches.map(m => buildMatchRow(m, faseData.cerrada, resultados, prons)).join('')
+      ? matches.map(m => buildMatchRow(m, faseData.cerrada, resultados, prons, faseData.cerrada)).join('')
       : `<div class="fase-locked-msg"><span class="lk-icon">🔒</span><p>Esta fase aún no ha comenzado.<br>El administrador la habilitará cuando llegue el momento.</p></div>`;
 
     acc.innerHTML = `
