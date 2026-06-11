@@ -1,17 +1,17 @@
 // ============================================================
-// Copa Mundial Contactvox 2026 — Google Apps Script API v4
+// Copa Mundial Contactvox 2026 - Google Apps Script API v5
 // ============================================================
 // SETUP:
-//   1. Abre script.google.com → tu proyecto
-//   2. Reemplaza TODO el código con este archivo
-//   3. Ejecuta initSheets() una vez (menú Ejecutar)
-//   4. Implementar → Gestionar implementaciones → Nueva versión
-//      (¡IMPORTANTE! Siempre crear NUEVA versión al editar)
+//   1. Abre script.google.com -> tu proyecto
+//   2. Reemplaza TODO el codigo con este archivo
+//   3. Ejecuta initSheets() una vez (menu Ejecutar)
+//   4. Implementar -> Gestionar implementaciones -> Nueva version
+//      (IMPORTANTE! Siempre crear NUEVA version al editar)
 // ============================================================
 
 const SPREADSHEET_ID = '19ml_9AHzIo4Eu3vARpPoBZMQHXOZdjtl7Tzgz9dUHm4';
 
-// ── Whitelist de participantes (validación server-side) ──────
+// -- Whitelist de participantes (validacion server-side) ------
 const ALLOWED_NAMES = [
   'Alexander Conde','Bryan Cortez','Christian Freire','Daniel Tapia',
   'David Chicaiza','Elizabeth Carrillo','Evelyn Achig','Fabian Olmedo',
@@ -19,12 +19,20 @@ const ALLOWED_NAMES = [
   'Jhon Tanicuchi','Jhonny Andrade','Jimmy Pardo','Joan Martinez',
   'Leyla Berrones','Luis Aguirre','Luis Bastidas','Luis Machado',
   'Mario Vela','Mariela Garzon','Naymar Sanchez','Paul Cabrera',
-  'Richard Suárez','Thalia Ortega','Verónica Bermúdez',
+  'Richard Suarez','Thalia Ortega','Veronica Bermudez',
 ];
 const ALLOWED_SET = new Set(ALLOWED_NAMES.map(n => n.toLowerCase().trim()));
 
 function isAllowedUser(name) {
-  return ALLOWED_SET.has((name || '').toLowerCase().trim());
+  if (!name) return false;
+  var n = name.toLowerCase().trim()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '');
+  for (var i = 0; i < ALLOWED_NAMES.length; i++) {
+    var allowed = ALLOWED_NAMES[i].toLowerCase().trim()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '');
+    if (n === allowed) return true;
+  }
+  return false;
 }
 
 const HEADERS = {
@@ -36,7 +44,7 @@ const HEADERS = {
   equiposElim: ['matchId', 'local', 'visit'],
 };
 
-// ── Helpers ──────────────────────────────────────────────────
+// -- Helpers --------------------------------------------------
 
 function ss() { return SpreadsheetApp.openById(SPREADSHEET_ID); }
 
@@ -47,8 +55,8 @@ function respond(data) {
 }
 
 function getSheet(name) {
-  const spreadsheet = ss();
-  let sheet = spreadsheet.getSheetByName(name);
+  var spreadsheet = ss();
+  var sheet = spreadsheet.getSheetByName(name);
   if (!sheet) {
     sheet = spreadsheet.insertSheet(name);
     if (HEADERS[name]) sheet.appendRow(HEADERS[name]);
@@ -57,55 +65,58 @@ function getSheet(name) {
 }
 
 function sheetToObjects(name) {
-  const sheet = getSheet(name);
-  const values = sheet.getDataRange().getValues();
+  var sheet = getSheet(name);
+  var values = sheet.getDataRange().getValues();
   if (values.length < 2) return [];
-  const [headers, ...rows] = values;
-  return rows.map(row => {
-    const obj = {};
-    headers.forEach((h, i) => {
-      const v = row[i];
-      obj[h] = (v !== null && v !== undefined) ? String(v) : '';
-    });
-    return obj;
-  });
+  var headers = values[0];
+  var result = [];
+  for (var i = 1; i < values.length; i++) {
+    var obj = {};
+    for (var j = 0; j < headers.length; j++) {
+      var v = values[i][j];
+      obj[String(headers[j])] = (v !== null && v !== undefined) ? String(v) : '';
+    }
+    result.push(obj);
+  }
+  return result;
 }
 
 function findRow(sheetName, colIdx, value) {
-  const values = getSheet(sheetName).getDataRange().getValues();
-  for (let i = 1; i < values.length; i++) {
+  var values = getSheet(sheetName).getDataRange().getValues();
+  for (var i = 1; i < values.length; i++) {
     if (String(values[i][colIdx]) === String(value)) return i + 1;
   }
   return -1;
 }
 
 function findRow2(sheetName, c1, v1, c2, v2) {
-  const values = getSheet(sheetName).getDataRange().getValues();
-  for (let i = 1; i < values.length; i++) {
+  var values = getSheet(sheetName).getDataRange().getValues();
+  for (var i = 1; i < values.length; i++) {
     if (String(values[i][c1]) === String(v1) &&
         String(values[i][c2]) === String(v2)) return i + 1;
   }
   return -1;
 }
 
-// ── GET handler ──────────────────────────────────────────────
+// -- GET handler ----------------------------------------------
 
 function doGet(e) {
   try {
-    const action = (e && e.parameter && e.parameter.action) || 'getAll';
+    var action = (e && e.parameter && e.parameter.action) || 'getAll';
     if (action === 'getAll') return respond(getAllData());
     if (action === 'ping')   return respond({ ok: true, ts: Date.now() });
+    if (action === 'debug')  return respond(debugSheets());
     return respond({ ok: false, error: 'Unknown GET action: ' + action });
   } catch (err) {
     return respond({ ok: false, error: err.message });
   }
 }
 
-// ── POST handler ─────────────────────────────────────────────
+// -- POST handler ---------------------------------------------
 
 function doPost(e) {
   try {
-    let params;
+    var params;
     try { params = JSON.parse(e.postData.contents); }
     catch (_) { params = e.parameter || {}; }
 
@@ -125,20 +136,20 @@ function doPost(e) {
   }
 }
 
-// ── getAll ───────────────────────────────────────────────────
+// -- getAll ---------------------------------------------------
 
 function getAllData() {
-  const usuariosRaw   = sheetToObjects('usuarios');
-  const pronosRaw     = sheetToObjects('pronosticos');
-  const resultadosRaw = sheetToObjects('resultados');
-  const especialesRaw = sheetToObjects('especiales');
-  const fasesRaw      = sheetToObjects('fases');
-  const elimRaw       = sheetToObjects('equiposElim');
+  var usuariosRaw   = sheetToObjects('usuarios');
+  var pronosRaw     = sheetToObjects('pronosticos');
+  var resultadosRaw = sheetToObjects('resultados');
+  var especialesRaw = sheetToObjects('especiales');
+  var fasesRaw      = sheetToObjects('fases');
+  var elimRaw       = sheetToObjects('equiposElim');
 
-  const usuarios = usuariosRaw.map(u => ({ id: u.id, name: u.name, dept: u.dept }));
+  var usuarios = usuariosRaw.map(function(u) { return { id: u.id, name: u.name, dept: u.dept }; });
 
-  const pronosticos = {};
-  pronosRaw.forEach(p => {
+  var pronosticos = {};
+  pronosRaw.forEach(function(p) {
     if (!p.userId || !p.matchId) return;
     if (!pronosticos[p.userId]) pronosticos[p.userId] = {};
     pronosticos[p.userId][p.matchId] = {
@@ -149,8 +160,8 @@ function getAllData() {
     };
   });
 
-  const resultados = {};
-  resultadosRaw.forEach(r => {
+  var resultados = {};
+  resultadosRaw.forEach(function(r) {
     if (!r.matchId) return;
     resultados[r.matchId] = {
       l: r.local  || r.l || '',
@@ -160,8 +171,8 @@ function getAllData() {
     };
   });
 
-  const especiales = {};
-  especialesRaw.forEach(e => {
+  var especiales = {};
+  especialesRaw.forEach(function(e) {
     if (!e.userId) return;
     especiales[e.userId] = {
       campeon: e.campeon || '', sub: e.sub || '',
@@ -170,12 +181,12 @@ function getAllData() {
   });
 
   // Fases
-  const fasesDefault = ['grupo','octavos','cuartos','semis','tercero','final','especiales'];
-  const fases = {};
-  fasesDefault.forEach(f => {
+  var fasesDefault = ['grupo','octavos','cuartos','semis','tercero','final','especiales'];
+  var fases = {};
+  fasesDefault.forEach(function(f) {
     fases[f] = { habilitada: false, cerrada: false, habilitadaEn: '', cerradaEn: '' };
   });
-  fasesRaw.forEach(f => {
+  fasesRaw.forEach(function(f) {
     if (!f.fase) return;
     fases[f.fase] = {
       habilitada:  f.habilitada === 'true' || f.habilitada === true,
@@ -186,25 +197,25 @@ function getAllData() {
   });
 
   // Equipos eliminatorios
-  const equiposElim = {};
-  elimRaw.forEach(e => {
+  var equiposElim = {};
+  elimRaw.forEach(function(e) {
     if (!e.matchId) return;
     equiposElim[e.matchId] = { local: e.local || '', visit: e.visit || '' };
   });
 
-  return { ok: true, usuarios, pronosticos, resultados, especiales, fases, equiposElim, premiosSemanales: [] };
+  return { ok: true, usuarios: usuarios, pronosticos: pronosticos, resultados: resultados, especiales: especiales, fases: fases, equiposElim: equiposElim, premiosSemanales: [] };
 }
 
-// ── saveUsuario ──────────────────────────────────────────────
+// -- saveUsuario ----------------------------------------------
 
 function saveUsuario(p) {
   if (!p.id || !p.name) throw new Error('Missing id or name');
   if (!isAllowedUser(p.name)) throw new Error('Usuario no autorizado');
-  const name = String(p.name).trim().substring(0, 60);
-  const dept = String(p.dept || 'General').trim().substring(0, 40);
-  const id   = String(p.id).trim().substring(0, 80);
-  const sheet = getSheet('usuarios');
-  const row   = findRow('usuarios', 0, id);
+  var name = String(p.name).trim().substring(0, 60);
+  var dept = String(p.dept || 'General').trim().substring(0, 40);
+  var id   = String(p.id).trim().substring(0, 80);
+  var sheet = getSheet('usuarios');
+  var row   = findRow('usuarios', 0, id);
   if (row > 0) {
     sheet.getRange(row, 2).setValue(name);
     sheet.getRange(row, 3).setValue(dept);
@@ -214,22 +225,20 @@ function saveUsuario(p) {
   return { ok: true, action: 'created' };
 }
 
-// ── savePronostico ───────────────────────────────────────────
+// -- savePronostico -------------------------------------------
 
 function savePronostico(p) {
   if (!p.userId || !p.matchId) throw new Error('Missing userId or matchId');
-  // Verificar que el usuario exista en la hoja de usuarios registrados
   if (findRow('usuarios', 0, p.userId) < 0) throw new Error('Usuario no registrado');
-  // Sanitizar: solo aceptar valores numéricos cortos para scores
-  const local = String(p.local || '').trim().substring(0, 3).replace(/[^0-9]/g, '');
-  const visita = String(p.visita || '').trim().substring(0, 3).replace(/[^0-9]/g, '');
-  const matchId = String(p.matchId).trim().substring(0, 10);
-  const userId  = String(p.userId).trim().substring(0, 80);
-  const fase = String(p.fase || '').trim().substring(0, 20).replace(/[^a-z]/g, '');
-  const clasifica = String(p.clasifica || '').trim().replace(/[^a-z]/g, '');
-  const sheet = getSheet('pronosticos');
-  const row   = findRow2('pronosticos', 0, userId, 1, matchId);
-  const now   = new Date().toString();
+  var local = String(p.local || '').trim().substring(0, 3).replace(/[^0-9]/g, '');
+  var visita = String(p.visita || '').trim().substring(0, 3).replace(/[^0-9]/g, '');
+  var matchId = String(p.matchId).trim().substring(0, 10);
+  var userId  = String(p.userId).trim().substring(0, 80);
+  var fase = String(p.fase || '').trim().substring(0, 20).replace(/[^a-z]/g, '');
+  var clasifica = String(p.clasifica || '').trim().replace(/[^a-z]/g, '');
+  var sheet = getSheet('pronosticos');
+  var row   = findRow2('pronosticos', 0, userId, 1, matchId);
+  var now   = new Date().toString();
   if (row > 0) {
     sheet.getRange(row, 3).setValue(local);
     sheet.getRange(row, 4).setValue(visita);
@@ -242,17 +251,17 @@ function savePronostico(p) {
   return { ok: true, action: 'created' };
 }
 
-// ── saveResultado ────────────────────────────────────────────
+// -- saveResultado --------------------------------------------
 
 function saveResultado(p) {
   if (!p.matchId) throw new Error('Missing matchId');
-  const matchId = String(p.matchId).trim().substring(0, 10);
-  const local = String(p.local || '').trim().substring(0, 3).replace(/[^0-9]/g, '');
-  const visita = String(p.visita || '').trim().substring(0, 3).replace(/[^0-9]/g, '');
-  const clasifica = String(p.clasifica || '').trim().replace(/[^a-z]/g, '');
-  const sheet = getSheet('resultados');
-  const row   = findRow('resultados', 0, matchId);
-  const now   = new Date().toString();
+  var matchId = String(p.matchId).trim().substring(0, 10);
+  var local = String(p.local || '').trim().substring(0, 3).replace(/[^0-9]/g, '');
+  var visita = String(p.visita || '').trim().substring(0, 3).replace(/[^0-9]/g, '');
+  var clasifica = String(p.clasifica || '').trim().replace(/[^a-z]/g, '');
+  var sheet = getSheet('resultados');
+  var row   = findRow('resultados', 0, matchId);
+  var now   = new Date().toString();
   if (row > 0) {
     sheet.getRange(row, 2).setValue(local);
     sheet.getRange(row, 3).setValue(visita);
@@ -264,12 +273,12 @@ function saveResultado(p) {
   return { ok: true, action: 'created' };
 }
 
-// ── saveEspecial ─────────────────────────────────────────────
+// -- saveEspecial ---------------------------------------------
 
 function saveEspecial(p) {
   if (!p.userId) throw new Error('Missing userId');
-  const sheet = getSheet('especiales');
-  const row   = findRow('especiales', 0, p.userId);
+  var sheet = getSheet('especiales');
+  var row   = findRow('especiales', 0, p.userId);
   if (row > 0) {
     sheet.getRange(row, 2).setValue(p.campeon    || '');
     sheet.getRange(row, 3).setValue(p.sub        || '');
@@ -281,13 +290,13 @@ function saveEspecial(p) {
   return { ok: true, action: 'created' };
 }
 
-// ── habilitarFase ────────────────────────────────────────────
+// -- habilitarFase --------------------------------------------
 
 function habilitarFase(p) {
   if (!p.fase) throw new Error('Missing fase');
-  const sheet = getSheet('fases');
-  const row = findRow('fases', 0, p.fase);
-  const now = new Date().toString();
+  var sheet = getSheet('fases');
+  var row = findRow('fases', 0, p.fase);
+  var now = new Date().toString();
   if (row > 0) {
     sheet.getRange(row, 2).setValue('true');
     sheet.getRange(row, 4).setValue(now);
@@ -297,13 +306,13 @@ function habilitarFase(p) {
   return { ok: true };
 }
 
-// ── cerrarFase ───────────────────────────────────────────────
+// -- cerrarFase -----------------------------------------------
 
 function cerrarFase(p) {
   if (!p.fase) throw new Error('Missing fase');
-  const sheet = getSheet('fases');
-  const row = findRow('fases', 0, p.fase);
-  const now = new Date().toString();
+  var sheet = getSheet('fases');
+  var row = findRow('fases', 0, p.fase);
+  var now = new Date().toString();
   if (row > 0) {
     sheet.getRange(row, 3).setValue('true');
     sheet.getRange(row, 5).setValue(now);
@@ -313,12 +322,12 @@ function cerrarFase(p) {
   return { ok: true };
 }
 
-// ── saveEquiposElim ──────────────────────────────────────────
+// -- saveEquiposElim ------------------------------------------
 
 function saveEquiposElim(p) {
   if (!p.matchId) throw new Error('Missing matchId');
-  const sheet = getSheet('equiposElim');
-  const row = findRow('equiposElim', 0, p.matchId);
+  var sheet = getSheet('equiposElim');
+  var row = findRow('equiposElim', 0, p.matchId);
   if (row > 0) {
     sheet.getRange(row, 2).setValue(p.local || '');
     sheet.getRange(row, 3).setValue(p.visit || '');
@@ -328,26 +337,67 @@ function saveEquiposElim(p) {
   return { ok: true, action: 'created' };
 }
 
-// ── Setup inicial ────────────────────────────────────────────
+// -- Debug ----------------------------------------------------
 
-function initSheets() {
-  Object.keys(HEADERS).forEach(name => {
-    const sheet = getSheet(name);
-    // Si la hoja ya existía pero con headers viejos, verificar
-    const existing = sheet.getRange(1, 1, 1, sheet.getLastColumn() || 1).getValues()[0];
-    const expected = HEADERS[name];
-    if (existing.length < expected.length || String(existing[0]) !== expected[0]) {
-      // Limpiar y poner headers correctos
-      sheet.clear();
-      sheet.appendRow(expected);
-    }
+function debugSheets() {
+  var spreadsheet = ss();
+  var sheets = spreadsheet.getSheets().map(function(s) { return s.getName(); });
+  var info = {};
+  ['pronosticos', 'resultados', 'usuarios'].forEach(function(name) {
+    var sheet = spreadsheet.getSheetByName(name);
+    if (!sheet) { info[name] = 'NOT FOUND'; return; }
+    var lastRow = sheet.getLastRow();
+    var lastCol = sheet.getLastColumn();
+    var headers = lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String) : [];
+    var sampleRows = lastRow > 1 ? sheet.getRange(2, 1, Math.min(lastRow - 1, 5), lastCol).getValues() : [];
+    info[name] = {
+      lastRow: lastRow,
+      lastCol: lastCol,
+      headers: headers,
+      sampleRows: sampleRows.map(function(r) { return r.map(String); }),
+      expectedHeaders: HEADERS[name]
+    };
   });
-  Logger.log('Pestañas verificadas: ' + Object.keys(HEADERS).join(', '));
+  return { ok: true, allSheets: sheets, info: info };
 }
 
-// ── Test ─────────────────────────────────────────────────────
+// -- Setup inicial --------------------------------------------
+
+function initSheets() {
+  var names = Object.keys(HEADERS);
+  names.forEach(function(name) {
+    var sheet = getSheet(name);
+    var lastCol = sheet.getLastColumn();
+    if (lastCol === 0) {
+      sheet.appendRow(HEADERS[name]);
+      return;
+    }
+    var existing = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+    var expected = HEADERS[name];
+    // Check if headers match - compare each one
+    var needsFix = existing.length < expected.length;
+    if (!needsFix) {
+      for (var i = 0; i < expected.length; i++) {
+        if (existing[i] !== expected[i]) { needsFix = true; break; }
+      }
+    }
+    if (needsFix) {
+      // Backup data rows before clearing
+      var lastRow = sheet.getLastRow();
+      var dataRows = lastRow > 1 ? sheet.getRange(2, 1, lastRow - 1, lastCol).getValues() : [];
+      sheet.clear();
+      sheet.appendRow(expected);
+      // Re-insert data rows (best effort - column order might differ)
+      dataRows.forEach(function(row) { sheet.appendRow(row); });
+      Logger.log('Fixed headers for: ' + name + ' (old: ' + existing.join(',') + ')');
+    }
+  });
+  Logger.log('Sheets verified: ' + names.join(', '));
+}
+
+// -- Test -----------------------------------------------------
 
 function testGetAll() {
-  const result = getAllData();
+  var result = getAllData();
   Logger.log(JSON.stringify(result, null, 2));
 }
