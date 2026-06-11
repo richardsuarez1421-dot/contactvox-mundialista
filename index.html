@@ -585,7 +585,7 @@ async function renderGrupos() {
   const container = document.getElementById('grupos-container');
   container.innerHTML = '';
 
-  const fases = await CVX.getFases();
+  const [fases, resultados] = await Promise.all([CVX.getFases(), CVX.getResultados()]);
   const faseGrupo = fases.grupo || {};
   const grupoBloqueado = faseGrupo.cerrada || !faseGrupo.habilitada;
 
@@ -622,7 +622,7 @@ async function renderGrupos() {
         </div>
       </div>
       <div class="grupo-body ${gi===0?'open':''}" id="gbody-${g}">
-        ${matches.map(m => buildMatchRow(m, yaGuardo)).join('')}
+        ${matches.map(m => buildMatchRow(m, yaGuardo, resultados)).join('')}
         <button class="save-group-btn" ${grupoBloqueado || yaGuardo ? 'disabled style="opacity:.5;cursor:not-allowed"' : ''} onclick="saveGroup('${g}')">${yaGuardo ? '✅ Guardado' : '💾 Guardar pronósticos del Grupo ' + g}</button>
       </div>`;
     container.appendChild(acc);
@@ -630,12 +630,16 @@ async function renderGrupos() {
 }
 
 // Construye la tarjeta de partido.
-// bloqueado: si true, desactiva inputs (fase ya guardada o cerrada)
-function buildMatchRow(m, bloqueado) {
+// bloqueado: fase ya guardada o cerrada
+// resultados: mapa de resultados oficiales — si el partido ya tiene resultado, los inputs se bloquean
+function buildMatchRow(m, bloqueado, resultados) {
   const fl = CVX.FLAGS[m.local] || '🏳️';
   const fv = CVX.FLAGS[m.visit] || '🏳️';
   const isElim = m.phase !== 'grupo';
-  const disabledAttr = bloqueado ? 'disabled style="opacity:.6;cursor:not-allowed"' : '';
+  const res = resultados && resultados[m.id];
+  const tieneResultado = res && res.l !== '' && res.l !== undefined;
+  const finalBloqueado = bloqueado || tieneResultado;
+  const disabledAttr = finalBloqueado ? 'disabled style="opacity:.6;cursor:not-allowed"' : '';
 
   const clasificaField = isElim ? `
     <div class="clasifica-field" id="cls-row-${m.id}">
@@ -723,6 +727,7 @@ async function saveGroup(g) {
   await Promise.all(saves);
   if (btn) { btn.textContent = `✅ Guardado`; btn.disabled = true; }
   toast(`✅ ${saves.length} pronósticos del Grupo ${g} guardados`);
+  await new Promise(r => setTimeout(r, 1000));
   await updateUI();
   if (saves.length > 0) confetti();
 }
@@ -767,12 +772,13 @@ async function refreshAllChips() {
   const updatedPhases = new Set();
   CVX.MATCHES.forEach(m => {
     const p = prons[m.id];
+    const res = resultados[m.id];
+    const tieneResultado = res && res.l !== '' && res.l !== undefined;
     const inp1 = document.getElementById(`pl-${m.id}`);
     const inp2 = document.getElementById(`pv-${m.id}`);
     if (p && inp1 && inp2) {
       inp1.value = p.l; inp2.value = p.v;
       inp1.classList.add('saved'); inp2.classList.add('saved');
-      // Restaurar radio de clasifica si es eliminatoria
       if (m.phase !== 'grupo' && p.clasifica) {
         const radio = document.querySelector(`input[name="cls-${m.id}"][value="${p.clasifica}"]`);
         if (radio) radio.checked = true;
@@ -780,6 +786,12 @@ async function refreshAllChips() {
       _updateChipSync(m.id, p.l, p.v, p.clasifica || '', resultados);
     } else {
       _updateChipSync(m.id, '', '', '', resultados);
+    }
+    // Bloquear inputs si ya hay resultado oficial
+    if (tieneResultado) {
+      if (inp1) { inp1.disabled = true; inp1.style.opacity = '.6'; inp1.style.cursor = 'not-allowed'; }
+      if (inp2) { inp2.disabled = true; inp2.style.opacity = '.6'; inp2.style.cursor = 'not-allowed'; }
+      document.querySelectorAll(`input[name="cls-${m.id}"]`).forEach(r => r.disabled = true);
     }
     if (m.phase === 'grupo' && m.group) updatedGroups.add(m.group);
     else updatedPhases.add(m.phase);
@@ -943,10 +955,11 @@ async function renderElim() {
   const fases = await CVX.getFases();
   const equiposElim = (CVX.cache && CVX.cache.equiposElim) || {};
   let faseUsuario = {};
-  let allProns = {}, resultados = {};
+  let allProns = {};
+  const [allPronsFetch, resultados] = await Promise.all([CVX.getPronosticos(), CVX.getResultados()]);
+  allProns = allPronsFetch;
   if (currentUser) {
     faseUsuario = await CVX.getFaseUsuario(currentUser.id);
-    [allProns, resultados] = await Promise.all([CVX.getPronosticos(), CVX.getResultados()]);
   }
   const prons = allProns[currentUser?.id] || {};
 
@@ -994,7 +1007,7 @@ async function renderElim() {
     }
 
     const bodyContent = habilitada
-      ? matches.map(m => buildMatchRow(m, yaGuardo)).join('')
+      ? matches.map(m => buildMatchRow(m, yaGuardo, resultados)).join('')
         + `<button class="save-group-btn" ${faseData.cerrada || yaGuardo ? 'disabled style="opacity:.5;cursor:not-allowed"' : ''} onclick="savePhase('${ph.id}')">${yaGuardo ? '✅ Guardado' : '💾 Guardar pronósticos — ' + ph.label}</button>`
       : `<div class="fase-locked-msg"><span class="lk-icon">🔒</span><p>Esta fase aún no ha comenzado.<br>El administrador la habilitará cuando llegue el momento.</p></div>`;
 
@@ -1085,6 +1098,7 @@ async function savePhase(phaseId) {
   const btnContainer = document.querySelector(`#fbody-${phaseId} .save-group-btn`);
   if (btnContainer) { btnContainer.textContent = '✅ Guardado'; btnContainer.disabled = true; }
   toast(`✅ ${saves.length} pronósticos de ${ph ? ph.label : phaseId} guardados`);
+  await new Promise(r => setTimeout(r, 1000));
   await updateUI();
   if (saves.length > 0) confetti();
 }
