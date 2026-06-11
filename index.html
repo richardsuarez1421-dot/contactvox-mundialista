@@ -243,6 +243,60 @@ footer .fg{color:var(--verde);font-weight:600}
 .skeleton-card{height:100px;margin-bottom:10px}
 .skeleton-text{height:16px;margin-bottom:8px}
 .skeleton-text.short{width:60%}
+
+/* ── RESPONSIVE DESIGN FOR MATCH ROW & NAV ── */
+@media(max-width:600px){
+  nav {
+    padding: 0 12px;
+  }
+  .nav-brand {
+    font-size: 16px;
+    letter-spacing: 1.5px;
+  }
+  .nav-links {
+    gap: 10px;
+  }
+  .nav-links a {
+    font-size: 10px;
+  }
+  .nav-user {
+    display: none; /* Hide username in nav on small devices to prevent overflow */
+  }
+  
+  .match-row {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: 
+      "local visit"
+      "center center";
+    gap: 16px;
+    padding: 16px 12px;
+  }
+  .mteam:not(.r) {
+    grid-area: local;
+    justify-content: flex-start;
+  }
+  .mteam.r {
+    grid-area: visit;
+    justify-content: flex-end;
+    flex-direction: row-reverse;
+  }
+  .mcenter {
+    grid-area: center;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .mname {
+    font-size: 12px;
+  }
+  .mflag {
+    font-size: 20px;
+  }
+  .clasifica-opts {
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+}
 </style>
 </head>
 <body>
@@ -489,14 +543,19 @@ window.addEventListener('DOMContentLoaded', async () => {
   try {
     await Promise.race([
       (async () => {
+        // Carga inicial explícita de la caché
+        const cache = await CVX.getCache(true);
+        if (cache && cache.ok === false) {
+          throw new Error('Sin conexión con el servidor (Firebase GET failed)');
+        }
+        await renderGrupos();
         const _f0 = await CVX.getFases();
         window._faseSig = JSON.stringify({ fases: _f0, equiposElim: (CVX.cache && CVX.cache.equiposElim) || {} });
-        await renderGrupos();
         await renderElim();
         await updateUI();        // refreshAllChips() rellena los pronósticos guardados
         await loadEspeciales();
       })(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 15000))
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 25000))
     ]);
   } catch (err) {
     console.error('CVX init error:', err);
@@ -508,7 +567,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     </div>`;
     ['grupos-container','ranking-list','user-banner-area'].forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.innerHTML = errHtml;
+      if (el && el.dataset.loaded !== 'true') el.innerHTML = errHtml;
     });
   }
 
@@ -545,10 +604,13 @@ function showSkeletonLoader() {
     document.getElementById('ranking-list')
   ];
   els.forEach(el => {
-    if (el) el.innerHTML = `
-      <div class="skeleton skeleton-card"></div>
-      <div class="skeleton skeleton-card"></div>
-      <div class="skeleton skeleton-card"></div>`;
+    if (el) {
+      el.innerHTML = `
+        <div class="skeleton skeleton-card"></div>
+        <div class="skeleton skeleton-card"></div>
+        <div class="skeleton skeleton-card"></div>`;
+      el.dataset.loaded = 'false';
+    }
   });
 }
 
@@ -586,6 +648,7 @@ async function updateUI() {
     ban.innerHTML = `<div class="no-user-banner">⚠️ <span>Para guardar tus pronósticos <strong style="cursor:pointer;text-decoration:underline" onclick="openLogin()">inicia sesión aquí</strong></span></div>`;
     nav.textContent = '';
   }
+  ban.dataset.loaded = 'true';
   renderRankingFromData(rk);
   await refreshAllChips();
 }
@@ -593,6 +656,7 @@ async function updateUI() {
 // ══ RENDER GRUPOS — VISTA CALENDARIO ══
 async function renderGrupos() {
   const container = document.getElementById('grupos-container');
+  if (!container) return;
 
   const [fases, resultados, pronosticos, bloqueados] = await Promise.all([
     CVX.getFases(), CVX.getResultados(), CVX.getPronosticos(), CVX.getBloqueados()
@@ -629,6 +693,7 @@ async function renderGrupos() {
 
     container.appendChild(dayDiv);
   });
+  container.dataset.loaded = 'true';
 }
 
 // Construye la tarjeta de partido.
@@ -1055,6 +1120,7 @@ function renderRankingFromData(rk) {
   if (!list) return;
   if (!rk || rk.length === 0) {
     list.innerHTML = '<div class="rk-empty">Aún no hay participantes registrados. ¡Sé el primero! ⚽</div>';
+    list.dataset.loaded = 'true';
     return;
   }
   const phaseLabels = { grupo:'⚽Grupos', octavos:'🔟Oct', cuartos:'🏅Cuar', semis:'🌟Semis', tercero:'🥉3er', final:'🏆Final' };
@@ -1080,6 +1146,7 @@ function renderRankingFromData(rk) {
       <div class="rcell pts">${p.pts}</div>
     </div>`;
   }).join('');
+  list.dataset.loaded = 'true';
 }
 async function renderRanking() {
   renderRankingFromData(await CVX.buildRanking());

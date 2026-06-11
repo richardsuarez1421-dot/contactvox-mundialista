@@ -40,6 +40,20 @@ const CVX = (() => {
   // -- FIREBASE REALTIME DATABASE URL -----------------------------
   const FB_URL = 'https://mundialista-cvx-default-rtdb.firebaseio.com';
 
+  function normalizeNameKey(value) {
+    return String(value || '')
+      .toLowerCase()
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ');
+  }
+
+  function buildUserIdFromName(name) {
+    const normalized = normalizeNameKey(name);
+    return normalized ? `u_${normalized.replace(/\s+/g, '_')}` : '';
+  }
+
   // -- WHITELIST DE PARTICIPANTES ---------------------------------
   const ALLOWED_NAMES = [
     'Alexander Conde','Bryan Cortez','Christian Freire','Daniel Tapia',
@@ -50,11 +64,14 @@ const CVX = (() => {
     'Mario Vela','Mariela Garzon','Naymar Sanchez','Paul Cabrera',
     'Richard Suarez','Thalia Ortega','Veronica Bermudez',
   ];
+  const ALLOWED_NORM2 = new Set(ALLOWED_NAMES.map(normalizeNameKey));
+  const ALLOWED_USER_IDS = new Set(ALLOWED_NAMES.map(buildUserIdFromName).filter(Boolean));
   const ALLOWED_NORM = new Set(ALLOWED_NAMES.map(n =>
     n.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '')
   ));
 
   function isAllowedUser(name) {
+    return !!name && ALLOWED_NORM2.has(normalizeNameKey(name));
     if (!name) return false;
     const n = name.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '');
     return ALLOWED_NORM.has(n);
@@ -241,11 +258,68 @@ const CVX = (() => {
     return hasText(value) ? String(value).trim() : '';
   }
 
+  function normalizeLikelyParticipantId(userId) {
+    const uid = cleanText(userId);
+    if (!uid) return '';
+    if (ALLOWED_USER_IDS.has(uid)) return uid;
+    for (const baseId of ALLOWED_USER_IDS) {
+      if (uid.startsWith(baseId + '_')) return baseId;
+    }
+    return uid;
+  }
+
+  function getCanonicalUserId(rawId, name) {
+    const uid = normalizeLikelyParticipantId(rawId);
+    const baseId = buildUserIdFromName(name);
+    if (baseId && (uid === baseId || uid.startsWith(baseId + '_'))) return baseId;
+    return uid || baseId;
+  }
+
+  function normalizeStoredUser(user) {
+    if (!user) return null;
+    const name = cleanText(user.name);
+    const dept = cleanText(user.dept) || 'General';
+    let id = cleanText(user.id);
+    if (!name) return null;
+    const baseId = buildUserIdFromName(name);
+    if (baseId && (!id || id === baseId || id.startsWith(baseId + '_'))) {
+      id = baseId;
+    }
+    if (!id) return null;
+    return { id, name, dept };
+  }
+
+  function createUserIdResolver(usuarios) {
+    const exactIds = new Set();
+    const aliases = [];
+
+    (usuarios || []).forEach(u => {
+      const canonicalId = cleanText(u?.id);
+      const baseId = buildUserIdFromName(u?.name);
+      if (!canonicalId) return;
+      exactIds.add(canonicalId);
+      if (baseId) aliases.push([baseId, canonicalId]);
+      aliases.push([canonicalId, canonicalId]);
+    });
+
+    aliases.sort((a, b) => b[0].length - a[0].length);
+
+    return function resolveUserId(rawId) {
+      const uid = normalizeLikelyParticipantId(rawId);
+      if (!uid) return '';
+      if (exactIds.has(uid)) return uid;
+      for (const [aliasId, canonicalId] of aliases) {
+        if (uid === aliasId || uid.startsWith(aliasId + '_')) return canonicalId;
+      }
+      return uid;
+    };
+  }
+
   // -- FIREBASE REST API ------------------------------------------
 
   async function fbGet(path) {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 10000);
+    const timer = setTimeout(() => ctrl.abort(), 15000);
     try {
       const res = await fetch(`${FB_URL}/${path}.json`, { signal: ctrl.signal });
       if (!res.ok) throw new Error(`Firebase GET error: ${res.status}`);
@@ -288,27 +362,43 @@ const CVX = (() => {
 
     // Usuarios: Firebase guarda {userId: {name, dept}} -> convertir a array
     const usuariosObj = raw.usuarios || {};
-    const usuarios = Object.entries(usuariosObj)
-      .map(([id, u]) => ({
-        id: cleanText(id),
-        name: cleanText(u?.name),
-        dept: cleanText(u?.dept) || 'General',
-      }))
-      .filter(u => u.id && u.name);
+    const usuariosMap = {};
+    Object.entries(usuariosObj).forEach(([id, u]) => {
+      const name = cleanText(u?.name);
+      const canonicalId = getCanonicalUserId(id, name);
+      if (!canonicalId || !name) return;
+      const prev = usuariosMap[canonicalId] || {};
+      usuariosMap[canonicalId] = {
+        id: canonicalId,
+        name: prev.name || name,
+        dept: prev.dept || cleanText(u?.dept) || 'General',
+      };
+    });
+    const usuarios = Object.values(usuariosMap);
+    const resolveUserId = createUserIdResolver(usuarios);
 
     // Pronosticos: {userId: {matchId: {l, v, fase, clasifica}}}
     const pronosticos = {};
     Object.entries(raw.pronosticos || {}).forEach(([userId, matches]) => {
-      const uid = cleanText(userId);
+      const uid = resolveUserId(userId);
       if (!uid || !matches || typeof matches !== 'object') return;
       Object.entries(matches).forEach(([matchId, p]) => {
         const mid = cleanText(matchId);
         if (!mid || !VALID_MATCH_IDS.has(mid) || !p) return;
         const l = cleanText(p.l);
         const v = cleanText(p.v);
+        const savedAt = cleanText(p.savedAt);
         if (l === '' || v === '') return;
         if (!pronosticos[uid]) pronosticos[uid] = {};
-        pronosticos[uid][mid] = { l, v, clasifica: cleanText(p.clasifica) || '', fase: cleanText(p.fase) || '' };
+        const prev = pronosticos[uid][mid];
+        if (prev && prev.savedAt && savedAt && prev.savedAt > savedAt) return;
+        pronosticos[uid][mid] = {
+          l,
+          v,
+          clasifica: cleanText(p.clasifica) || '',
+          fase: cleanText(p.fase) || '',
+          savedAt,
+        };
       });
     });
 
@@ -326,13 +416,14 @@ const CVX = (() => {
     // Especiales: {userId: {campeon, sub, goleador, revelacion}}
     const especiales = {};
     Object.entries(raw.especiales || {}).forEach(([userId, e]) => {
-      const uid = cleanText(userId);
+      const uid = resolveUserId(userId);
       if (!uid || !e || typeof e !== 'object') return;
+      const prev = especiales[uid] || {};
       especiales[uid] = {
-        campeon: cleanText(e.campeon),
-        sub: cleanText(e.sub),
-        goleador: cleanText(e.goleador),
-        revelacion: cleanText(e.revelacion),
+        campeon: cleanText(e.campeon) || prev.campeon || '',
+        sub: cleanText(e.sub) || prev.sub || '',
+        goleador: cleanText(e.goleador) || prev.goleador || '',
+        revelacion: cleanText(e.revelacion) || prev.revelacion || '',
       };
     });
 
@@ -380,11 +471,24 @@ const CVX = (() => {
     if (_inflight) return _inflight;
     _inflight = apiGet()
       .then(fresh => {
-        if (fresh) { _cache = fresh; _cacheTs = Date.now(); }
         _inflight = null;
-        return _cache || _emptyCache();
+        if (fresh) {
+          _cache = fresh;
+          _cacheTs = Date.now();
+        } else if (!_cache) {
+          _cache = { ..._emptyCache(), ok: false };
+          _cacheTs = Date.now();
+        }
+        return _cache;
       })
-      .catch(() => { _inflight = null; return _cache || _emptyCache(); });
+      .catch(() => {
+        _inflight = null;
+        if (!_cache) {
+          _cache = { ..._emptyCache(), ok: false };
+          _cacheTs = Date.now();
+        }
+        return _cache;
+      });
     return _inflight;
   }
 
@@ -400,31 +504,34 @@ const CVX = (() => {
 
   function getCurrentUser() {
     try {
-      const user = JSON.parse(localStorage.getItem('cvx2026_current_user')) || null;
+      const user = normalizeStoredUser(JSON.parse(localStorage.getItem('cvx2026_current_user')) || null);
       if (!user || !hasText(user.id) || !hasText(user.name)) {
         localStorage.removeItem('cvx2026_current_user');
         return null;
       }
-      return { id: cleanText(user.id), name: cleanText(user.name), dept: cleanText(user.dept) || 'General' };
+      localStorage.setItem('cvx2026_current_user', JSON.stringify(user));
+      return user;
     } catch {
       localStorage.removeItem('cvx2026_current_user');
       return null;
     }
   }
   function setCurrentUser(user) {
-    if (!user || !hasText(user.id) || !hasText(user.name)) return;
-    localStorage.setItem('cvx2026_current_user', JSON.stringify(user));
+    const normalizedUser = normalizeStoredUser(user);
+    if (!normalizedUser || !hasText(normalizedUser.id) || !hasText(normalizedUser.name)) return;
+    localStorage.setItem('cvx2026_current_user', JSON.stringify(normalizedUser));
   }
 
   // -- SETTERS (Firebase) -----------------------------------------
 
   async function saveUsuario(user) {
-    if (!user.id || !user.name) return null;
-    if (!isAllowedUser(user.name)) { console.error('Usuario no autorizado'); return null; }
+    const normalizedUser = normalizeStoredUser(user);
+    if (!normalizedUser?.id || !normalizedUser?.name) return null;
+    if (!isAllowedUser(normalizedUser.name)) { console.error('Usuario no autorizado'); return null; }
     try {
-      await fbSet(`usuarios/${user.id}`, {
-        name: user.name,
-        dept: user.dept || 'General',
+      await fbSet(`usuarios/${normalizedUser.id}`, {
+        name: normalizedUser.name,
+        dept: normalizedUser.dept || 'General',
         createdAt: new Date().toISOString(),
       });
       invalidateCache();
@@ -436,9 +543,10 @@ const CVX = (() => {
   }
 
   async function savePronostico(userId, matchId, l, v, fase, clasifica) {
-    if (!hasText(userId) || !hasText(matchId) || userId === 'undefined' || !VALID_MATCH_IDS.has(String(matchId))) return null;
+    const normalizedUserId = normalizeLikelyParticipantId(userId);
+    if (!hasText(normalizedUserId) || !hasText(matchId) || normalizedUserId === 'undefined' || !VALID_MATCH_IDS.has(String(matchId))) return null;
     try {
-      await fbSet(`pronosticos/${userId}/${matchId}`, {
+      await fbSet(`pronosticos/${normalizedUserId}/${matchId}`, {
         l: String(l),
         v: String(v),
         fase: String(fase || ''),
@@ -500,9 +608,10 @@ const CVX = (() => {
   }
 
   async function saveEspecial(userId, data) {
-    if (!hasText(userId) || userId === 'undefined') return null;
+    const normalizedUserId = normalizeLikelyParticipantId(userId);
+    if (!hasText(normalizedUserId) || normalizedUserId === 'undefined') return null;
     try {
-      await fbSet(`especiales/${userId}`, {
+      await fbSet(`especiales/${normalizedUserId}`, {
         campeon: data.campeon || '',
         sub: data.sub || '',
         goleador: data.goleador || '',
@@ -657,7 +766,7 @@ const CVX = (() => {
 
   async function getFaseUsuario(userId) {
     const prons = await getPronosticos();
-    const userProns = (prons || {})[userId] || {};
+    const userProns = (prons || {})[normalizeLikelyParticipantId(userId)] || {};
     const out = { grupo: false, octavos: false, cuartos: false, semis: false, tercero: false, final: false };
     const fasesPronosticadas = new Set();
     Object.entries(userProns).forEach(([mid, p]) => {
