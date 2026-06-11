@@ -601,10 +601,13 @@ async function renderGrupos() {
   const container = document.getElementById('grupos-container');
   container.innerHTML = '';
 
-  const [fases, resultados, pronosticos] = await Promise.all([CVX.getFases(), CVX.getResultados(), CVX.getPronosticos()]);
+  const [fases, resultados, pronosticos, bloqueados] = await Promise.all([
+    CVX.getFases(), CVX.getResultados(), CVX.getPronosticos(), CVX.getBloqueados()
+  ]);
   const faseGrupo = fases.grupo || {};
-  const grupoBloqueado = faseGrupo.cerrada || !faseGrupo.habilitada;
+  const faseBloqueada = faseGrupo.cerrada || !faseGrupo.habilitada;
   const userProns = (currentUser && pronosticos[currentUser.id]) || {};
+  const now = Date.now();
 
   CVX.GROUPS.forEach((g, gi) => {
     const matches = CVX.MATCHES_GRUPOS.filter(m => m.group === g);
@@ -618,7 +621,7 @@ async function renderGrupos() {
     // Contar cuántos partidos guardó el usuario en este grupo (excluyendo los con resultado oficial)
     const guardados = matches.filter(m => userProns[m.id]).length;
     const sinResultado = matches.filter(m => { const r = resultados[m.id]; return !(r && r.l !== '' && r.l !== undefined); }).length;
-    const estadoTexto = grupoBloqueado
+    const estadoTexto = faseBloqueada
       ? (faseGrupo.cerrada ? '🔒 Fase cerrada' : '🔒 Próximamente')
       : guardados === 0 ? '🔓 Abierta'
       : guardados >= sinResultado ? '✅ Completo'
@@ -640,7 +643,7 @@ async function renderGrupos() {
         </div>
       </div>
       <div class="grupo-body ${gi===0?'open':''}" id="gbody-${g}">
-        ${matches.map(m => buildMatchRow(m, grupoBloqueado, resultados, userProns, faseGrupo.cerrada)).join('')}
+        ${matches.map(m => buildMatchRow(m, faseBloqueada, resultados, userProns, faseGrupo.cerrada, bloqueados, now)).join('')}
       </div>`;
     container.appendChild(acc);
   });
@@ -649,15 +652,24 @@ async function renderGrupos() {
 // Construye la tarjeta de partido.
 // bloqueado: fase ya guardada o cerrada
 // resultados: mapa de resultados oficiales — si el partido ya tiene resultado, los inputs se bloquean
-// faseCerrada: true si el admin cerró la fase (impide edición)
-function buildMatchRow(m, bloqueado, resultados, userProns, faseCerrada) {
+// faseCerrada: admin cerró fase; bloqueados: mapa {matchId: true/false/undefined}; now: Date.now()
+function buildMatchRow(m, bloqueado, resultados, userProns, faseCerrada, bloqueados, now) {
   const fl = CVX.FLAGS[m.local] || '🏳️';
   const fv = CVX.FLAGS[m.visit] || '🏳️';
   const isElim = m.phase !== 'grupo';
   const res = resultados && resultados[m.id];
   const tieneResultado = res && res.l !== '' && res.l !== undefined;
   const yaGuardoEste = !!(userProns && userProns[m.id]);
-  const finalBloqueado = bloqueado || tieneResultado || yaGuardoEste;
+
+  // Auto-bloqueo por horario
+  const kickoffMs = m.kickoff ? new Date(m.kickoff).getTime() : null;
+  const kickoffPasado = kickoffMs && (now || Date.now()) >= kickoffMs;
+  const manualOverride = bloqueados ? bloqueados[m.id] : undefined;
+  // manualOverride=true: forzar lock; manualOverride=false: forzar unlock; undefined: auto
+  const porHorario = manualOverride === true ? true : (manualOverride === false ? false : kickoffPasado);
+
+  const finalBloqueado = bloqueado || tieneResultado || yaGuardoEste || porHorario;
+  const bloqueadoPorHorario = !bloqueado && !tieneResultado && !yaGuardoEste && porHorario;
   const disabledAttr = finalBloqueado ? 'disabled style="opacity:.6;cursor:not-allowed"' : '';
 
   // Pre-rellenar con valores guardados del usuario
@@ -679,12 +691,16 @@ function buildMatchRow(m, bloqueado, resultados, userProns, faseCerrada) {
   let btnHtml = '';
   if (!tieneResultado) {
     if (yaGuardoEste) {
-      const editBtn = (!faseCerrada && !bloqueado)
+      // Editar solo si la fase está abierta Y el partido no está bloqueado por horario o manualmente
+      const puedeEditar = !faseCerrada && !bloqueado && !porHorario;
+      const editBtn = puedeEditar
         ? `<button class="match-edit-btn" onclick="editMatch('${m.id}','${m.phase}')">✏️ Editar</button>`
         : '';
       btnHtml = `<div class="match-btn-row" id="btn-area-${m.id}"><button class="match-save-btn saved" disabled>✅ Guardado</button>${editBtn}</div>`;
-    } else if (!bloqueado) {
+    } else if (!finalBloqueado) {
       btnHtml = `<div class="match-btn-row" id="btn-area-${m.id}"><button class="match-save-btn" id="save-btn-${m.id}" onclick="saveMatch('${m.id}','${m.phase}')">💾 Guardar</button></div>`;
+    } else if (bloqueadoPorHorario) {
+      btnHtml = `<div class="match-btn-row" id="btn-area-${m.id}"><button class="match-save-btn saved" disabled>🔒 Iniciado</button></div>`;
     }
   }
 
@@ -1040,7 +1056,7 @@ async function renderElim() {
   const equiposElim = (CVX.cache && CVX.cache.equiposElim) || {};
   let faseUsuario = {};
   let allProns = {};
-  const [allPronsFetch, resultados] = await Promise.all([CVX.getPronosticos(), CVX.getResultados()]);
+  const [allPronsFetch, resultados, bloqueados] = await Promise.all([CVX.getPronosticos(), CVX.getResultados(), CVX.getBloqueados()]);
   allProns = allPronsFetch;
   if (currentUser) {
     faseUsuario = await CVX.getFaseUsuario(currentUser.id);
@@ -1090,8 +1106,9 @@ async function renderElim() {
       estadoIcon = '🔒';
     }
 
+    const now = Date.now();
     const bodyContent = habilitada
-      ? matches.map(m => buildMatchRow(m, faseData.cerrada, resultados, prons, faseData.cerrada)).join('')
+      ? matches.map(m => buildMatchRow(m, faseData.cerrada, resultados, prons, faseData.cerrada, bloqueados, now)).join('')
       : `<div class="fase-locked-msg"><span class="lk-icon">🔒</span><p>Esta fase aún no ha comenzado.<br>El administrador la habilitará cuando llegue el momento.</p></div>`;
 
     acc.innerHTML = `

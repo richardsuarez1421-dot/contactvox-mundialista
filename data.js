@@ -88,114 +88,115 @@ const CVX = (() => {
   ];
 
   // -- PARTIDOS FASE DE GRUPOS (72 partidos) ----------------------
+  // kickoff: UTC ISO datetime — auto-lock triggers when Date.now() >= new Date(kickoff)
   const MATCHES_GRUPOS = [
-    { id:'A1', phase:'grupo', group:'A', local:'México',         visit:'Sudáfrica',            date:'Jue 11 Jun', sede:'Mexico City Stadium' },
-    { id:'A2', phase:'grupo', group:'A', local:'Corea del Sur',  visit:'Chequia',              date:'Jue 11 Jun', sede:'Estadio Guadalajara' },
-    { id:'A3', phase:'grupo', group:'A', local:'Chequia',        visit:'Sudáfrica',            date:'Jue 18 Jun', sede:'Atlanta Stadium' },
-    { id:'A4', phase:'grupo', group:'A', local:'México',         visit:'Corea del Sur',        date:'Jue 18 Jun', sede:'Estadio Guadalajara' },
-    { id:'A5', phase:'grupo', group:'A', local:'Chequia',        visit:'México',               date:'Mié 24 Jun', sede:'Mexico City Stadium' },
-    { id:'A6', phase:'grupo', group:'A', local:'Sudáfrica',      visit:'Corea del Sur',        date:'Mié 24 Jun', sede:'Estadio Monterrey' },
-    { id:'B1', phase:'grupo', group:'B', local:'Canadá',         visit:'Bosnia y Herzegovina', date:'Vie 12 Jun', sede:'Toronto Stadium' },
-    { id:'B2', phase:'grupo', group:'B', local:'Catar',          visit:'Suiza',                date:'Sáb 13 Jun', sede:'San Francisco Bay Area' },
-    { id:'B3', phase:'grupo', group:'B', local:'Suiza',          visit:'Bosnia y Herzegovina', date:'Jue 18 Jun', sede:'Los Angeles Stadium' },
-    { id:'B4', phase:'grupo', group:'B', local:'Canadá',         visit:'Catar',                date:'Jue 18 Jun', sede:'BC Place Vancouver' },
-    { id:'B5', phase:'grupo', group:'B', local:'Suiza',          visit:'Canadá',               date:'Mié 24 Jun', sede:'BC Place Vancouver' },
-    { id:'B6', phase:'grupo', group:'B', local:'Bosnia y Herz.', visit:'Catar',                date:'Mié 24 Jun', sede:'Seattle Stadium' },
-    { id:'C1', phase:'grupo', group:'C', local:'Haití',          visit:'Escocia',              date:'Sáb 13 Jun', sede:'Boston Stadium' },
-    { id:'C2', phase:'grupo', group:'C', local:'Brasil',         visit:'Marruecos',            date:'Sáb 13 Jun', sede:'New York/New Jersey' },
-    { id:'C3', phase:'grupo', group:'C', local:'Brasil',         visit:'Haití',                date:'Vie 19 Jun', sede:'Philadelphia Stadium' },
-    { id:'C4', phase:'grupo', group:'C', local:'Escocia',        visit:'Marruecos',            date:'Vie 19 Jun', sede:'Boston Stadium' },
-    { id:'C5', phase:'grupo', group:'C', local:'Escocia',        visit:'Brasil',               date:'Mié 24 Jun', sede:'Miami Stadium' },
-    { id:'C6', phase:'grupo', group:'C', local:'Marruecos',      visit:'Haití',                date:'Mié 24 Jun', sede:'Atlanta Stadium' },
-    { id:'D1', phase:'grupo', group:'D', local:'Estados Unidos', visit:'Paraguay',             date:'Vie 12 Jun', sede:'Los Angeles Stadium' },
-    { id:'D2', phase:'grupo', group:'D', local:'Australia',      visit:'Türkiye',              date:'Sáb 13 Jun', sede:'BC Place Vancouver' },
-    { id:'D3', phase:'grupo', group:'D', local:'Türkiye',        visit:'Paraguay',             date:'Vie 19 Jun', sede:'San Francisco Bay Area' },
-    { id:'D4', phase:'grupo', group:'D', local:'Estados Unidos', visit:'Australia',            date:'Vie 19 Jun', sede:'Seattle Stadium' },
-    { id:'D5', phase:'grupo', group:'D', local:'Türkiye',        visit:'Estados Unidos',       date:'Jue 25 Jun', sede:'Los Angeles Stadium' },
-    { id:'D6', phase:'grupo', group:'D', local:'Paraguay',       visit:'Australia',            date:'Jue 25 Jun', sede:'San Francisco Bay Area' },
-    { id:'E1', phase:'grupo', group:'E', local:'Costa de Marfil',visit:'Ecuador',              date:'Dom 14 Jun', sede:'Philadelphia Stadium' },
-    { id:'E2', phase:'grupo', group:'E', local:'Alemania',       visit:'Curazao',              date:'Dom 14 Jun', sede:'Houston Stadium' },
-    { id:'E3', phase:'grupo', group:'E', local:'Alemania',       visit:'Costa de Marfil',      date:'Sáb 20 Jun', sede:'Toronto Stadium' },
-    { id:'E4', phase:'grupo', group:'E', local:'Ecuador',        visit:'Curazao',              date:'Sáb 20 Jun', sede:'Kansas City Stadium' },
-    { id:'E5', phase:'grupo', group:'E', local:'Curazao',        visit:'Costa de Marfil',      date:'Jue 25 Jun', sede:'Philadelphia Stadium' },
-    { id:'E6', phase:'grupo', group:'E', local:'Ecuador',        visit:'Alemania',             date:'Jue 25 Jun', sede:'New York/New Jersey' },
-    { id:'F1', phase:'grupo', group:'F', local:'Países Bajos',   visit:'Japón',                date:'Dom 14 Jun', sede:'Dallas Stadium' },
-    { id:'F2', phase:'grupo', group:'F', local:'Suecia',         visit:'Túnez',                date:'Dom 14 Jun', sede:'Estadio Monterrey' },
-    { id:'F3', phase:'grupo', group:'F', local:'Países Bajos',   visit:'Suecia',               date:'Sáb 20 Jun', sede:'Houston Stadium' },
-    { id:'F4', phase:'grupo', group:'F', local:'Túnez',          visit:'Japón',                date:'Sáb 20 Jun', sede:'Estadio Monterrey' },
-    { id:'F5', phase:'grupo', group:'F', local:'Japón',          visit:'Suecia',               date:'Jue 25 Jun', sede:'Dallas Stadium' },
-    { id:'F6', phase:'grupo', group:'F', local:'Túnez',          visit:'Países Bajos',         date:'Jue 25 Jun', sede:'Kansas City Stadium' },
-    { id:'G1', phase:'grupo', group:'G', local:'Irán',           visit:'Nueva Zelanda',        date:'Lun 15 Jun', sede:'Los Angeles Stadium' },
-    { id:'G2', phase:'grupo', group:'G', local:'Bélgica',        visit:'Egipto',               date:'Lun 15 Jun', sede:'Seattle Stadium' },
-    { id:'G3', phase:'grupo', group:'G', local:'Bélgica',        visit:'Irán',                 date:'Dom 21 Jun', sede:'Los Angeles Stadium' },
-    { id:'G4', phase:'grupo', group:'G', local:'Nueva Zelanda',  visit:'Egipto',               date:'Dom 21 Jun', sede:'BC Place Vancouver' },
-    { id:'G5', phase:'grupo', group:'G', local:'Egipto',         visit:'Irán',                 date:'Vie 26 Jun', sede:'Seattle Stadium' },
-    { id:'G6', phase:'grupo', group:'G', local:'Nueva Zelanda',  visit:'Bélgica',              date:'Vie 26 Jun', sede:'BC Place Vancouver' },
-    { id:'H1', phase:'grupo', group:'H', local:'Arabia Saudita', visit:'Uruguay',              date:'Lun 15 Jun', sede:'Miami Stadium' },
-    { id:'H2', phase:'grupo', group:'H', local:'España',         visit:'Cabo Verde',           date:'Lun 15 Jun', sede:'Atlanta Stadium' },
-    { id:'H3', phase:'grupo', group:'H', local:'Uruguay',        visit:'Cabo Verde',           date:'Dom 21 Jun', sede:'Miami Stadium' },
-    { id:'H4', phase:'grupo', group:'H', local:'España',         visit:'Arabia Saudita',       date:'Dom 21 Jun', sede:'Atlanta Stadium' },
-    { id:'H5', phase:'grupo', group:'H', local:'Cabo Verde',     visit:'Arabia Saudita',       date:'Vie 26 Jun', sede:'Houston Stadium' },
-    { id:'H6', phase:'grupo', group:'H', local:'Uruguay',        visit:'España',               date:'Vie 26 Jun', sede:'Estadio Guadalajara' },
-    { id:'I1', phase:'grupo', group:'I', local:'Francia',        visit:'Senegal',              date:'Mar 16 Jun', sede:'New York/New Jersey' },
-    { id:'I2', phase:'grupo', group:'I', local:'Irak',           visit:'Noruega',              date:'Mar 16 Jun', sede:'Boston Stadium' },
-    { id:'I3', phase:'grupo', group:'I', local:'Noruega',        visit:'Senegal',              date:'Lun 22 Jun', sede:'New York/New Jersey' },
-    { id:'I4', phase:'grupo', group:'I', local:'Francia',        visit:'Irak',                 date:'Lun 22 Jun', sede:'Philadelphia Stadium' },
-    { id:'I5', phase:'grupo', group:'I', local:'Noruega',        visit:'Francia',              date:'Vie 26 Jun', sede:'Boston Stadium' },
-    { id:'I6', phase:'grupo', group:'I', local:'Senegal',        visit:'Irak',                 date:'Vie 26 Jun', sede:'Toronto Stadium' },
-    { id:'J1', phase:'grupo', group:'J', local:'Argentina',      visit:'Argelia',              date:'Mar 16 Jun', sede:'Kansas City Stadium' },
-    { id:'J2', phase:'grupo', group:'J', local:'Austria',        visit:'Jordania',             date:'Mar 16 Jun', sede:'San Francisco Bay Area' },
-    { id:'J3', phase:'grupo', group:'J', local:'Argentina',      visit:'Austria',              date:'Lun 22 Jun', sede:'Dallas Stadium' },
-    { id:'J4', phase:'grupo', group:'J', local:'Jordania',       visit:'Argelia',              date:'Lun 22 Jun', sede:'San Francisco Bay Area' },
-    { id:'J5', phase:'grupo', group:'J', local:'Argelia',        visit:'Austria',              date:'Sáb 27 Jun', sede:'Kansas City Stadium' },
-    { id:'J6', phase:'grupo', group:'J', local:'Jordania',       visit:'Argentina',            date:'Sáb 27 Jun', sede:'Dallas Stadium' },
-    { id:'K1', phase:'grupo', group:'K', local:'Portugal',       visit:'Congo DR',             date:'Mié 17 Jun', sede:'Houston Stadium' },
-    { id:'K2', phase:'grupo', group:'K', local:'Uzbekistán',     visit:'Colombia',             date:'Mié 17 Jun', sede:'Mexico City Stadium' },
-    { id:'K3', phase:'grupo', group:'K', local:'Portugal',       visit:'Uzbekistán',           date:'Mar 23 Jun', sede:'Houston Stadium' },
-    { id:'K4', phase:'grupo', group:'K', local:'Colombia',       visit:'Congo DR',             date:'Mar 23 Jun', sede:'Estadio Guadalajara' },
-    { id:'K5', phase:'grupo', group:'K', local:'Colombia',       visit:'Portugal',             date:'Sáb 27 Jun', sede:'Miami Stadium' },
-    { id:'K6', phase:'grupo', group:'K', local:'Congo DR',       visit:'Uzbekistán',           date:'Sáb 27 Jun', sede:'Atlanta Stadium' },
-    { id:'L1', phase:'grupo', group:'L', local:'Ghana',          visit:'Panamá',               date:'Mié 17 Jun', sede:'Toronto Stadium' },
-    { id:'L2', phase:'grupo', group:'L', local:'Inglaterra',     visit:'Croacia',              date:'Mié 17 Jun', sede:'Dallas Stadium' },
-    { id:'L3', phase:'grupo', group:'L', local:'Inglaterra',     visit:'Ghana',                date:'Mar 23 Jun', sede:'Boston Stadium' },
-    { id:'L4', phase:'grupo', group:'L', local:'Panamá',         visit:'Croacia',              date:'Mar 23 Jun', sede:'Toronto Stadium' },
-    { id:'L5', phase:'grupo', group:'L', local:'Panamá',         visit:'Inglaterra',           date:'Sáb 27 Jun', sede:'New York/New Jersey' },
-    { id:'L6', phase:'grupo', group:'L', local:'Croacia',        visit:'Ghana',                date:'Sáb 27 Jun', sede:'Philadelphia Stadium' },
+    { id:'A1', phase:'grupo', group:'A', local:'México',         visit:'Sudáfrica',            date:'Jue 11 Jun', sede:'Mexico City Stadium',        kickoff:'2026-06-11T21:00:00Z' },
+    { id:'A2', phase:'grupo', group:'A', local:'Corea del Sur',  visit:'Chequia',              date:'Jue 11 Jun', sede:'Estadio Guadalajara',         kickoff:'2026-06-12T00:00:00Z' },
+    { id:'A3', phase:'grupo', group:'A', local:'Chequia',        visit:'Sudáfrica',            date:'Jue 18 Jun', sede:'Atlanta Stadium',             kickoff:'2026-06-18T21:00:00Z' },
+    { id:'A4', phase:'grupo', group:'A', local:'México',         visit:'Corea del Sur',        date:'Jue 18 Jun', sede:'Estadio Guadalajara',         kickoff:'2026-06-19T00:00:00Z' },
+    { id:'A5', phase:'grupo', group:'A', local:'Chequia',        visit:'México',               date:'Mié 24 Jun', sede:'Mexico City Stadium',        kickoff:'2026-06-24T21:00:00Z' },
+    { id:'A6', phase:'grupo', group:'A', local:'Sudáfrica',      visit:'Corea del Sur',        date:'Mié 24 Jun', sede:'Estadio Monterrey',           kickoff:'2026-06-24T21:00:00Z' },
+    { id:'B1', phase:'grupo', group:'B', local:'Canadá',         visit:'Bosnia y Herzegovina', date:'Vie 12 Jun', sede:'Toronto Stadium',             kickoff:'2026-06-12T21:00:00Z' },
+    { id:'B2', phase:'grupo', group:'B', local:'Catar',          visit:'Suiza',                date:'Sáb 13 Jun', sede:'San Francisco Bay Area',      kickoff:'2026-06-13T18:00:00Z' },
+    { id:'B3', phase:'grupo', group:'B', local:'Suiza',          visit:'Bosnia y Herzegovina', date:'Jue 18 Jun', sede:'Los Angeles Stadium',         kickoff:'2026-06-18T18:00:00Z' },
+    { id:'B4', phase:'grupo', group:'B', local:'Canadá',         visit:'Catar',                date:'Jue 18 Jun', sede:'BC Place Vancouver',          kickoff:'2026-06-18T21:00:00Z' },
+    { id:'B5', phase:'grupo', group:'B', local:'Suiza',          visit:'Canadá',               date:'Mié 24 Jun', sede:'BC Place Vancouver',          kickoff:'2026-06-24T21:00:00Z' },
+    { id:'B6', phase:'grupo', group:'B', local:'Bosnia y Herz.', visit:'Catar',                date:'Mié 24 Jun', sede:'Seattle Stadium',             kickoff:'2026-06-24T21:00:00Z' },
+    { id:'C1', phase:'grupo', group:'C', local:'Haití',          visit:'Escocia',              date:'Sáb 13 Jun', sede:'Boston Stadium',              kickoff:'2026-06-13T21:00:00Z' },
+    { id:'C2', phase:'grupo', group:'C', local:'Brasil',         visit:'Marruecos',            date:'Sáb 13 Jun', sede:'New York/New Jersey',         kickoff:'2026-06-14T00:00:00Z' },
+    { id:'C3', phase:'grupo', group:'C', local:'Brasil',         visit:'Haití',                date:'Vie 19 Jun', sede:'Philadelphia Stadium',        kickoff:'2026-06-19T21:00:00Z' },
+    { id:'C4', phase:'grupo', group:'C', local:'Escocia',        visit:'Marruecos',            date:'Vie 19 Jun', sede:'Boston Stadium',              kickoff:'2026-06-20T00:00:00Z' },
+    { id:'C5', phase:'grupo', group:'C', local:'Escocia',        visit:'Brasil',               date:'Mié 24 Jun', sede:'Miami Stadium',               kickoff:'2026-06-25T00:00:00Z' },
+    { id:'C6', phase:'grupo', group:'C', local:'Marruecos',      visit:'Haití',                date:'Mié 24 Jun', sede:'Atlanta Stadium',             kickoff:'2026-06-25T00:00:00Z' },
+    { id:'D1', phase:'grupo', group:'D', local:'Estados Unidos', visit:'Paraguay',             date:'Vie 12 Jun', sede:'Los Angeles Stadium',         kickoff:'2026-06-13T00:00:00Z' },
+    { id:'D2', phase:'grupo', group:'D', local:'Australia',      visit:'Türkiye',              date:'Sáb 13 Jun', sede:'BC Place Vancouver',          kickoff:'2026-06-14T00:00:00Z' },
+    { id:'D3', phase:'grupo', group:'D', local:'Türkiye',        visit:'Paraguay',             date:'Vie 19 Jun', sede:'San Francisco Bay Area',      kickoff:'2026-06-19T18:00:00Z' },
+    { id:'D4', phase:'grupo', group:'D', local:'Estados Unidos', visit:'Australia',            date:'Vie 19 Jun', sede:'Seattle Stadium',             kickoff:'2026-06-19T21:00:00Z' },
+    { id:'D5', phase:'grupo', group:'D', local:'Türkiye',        visit:'Estados Unidos',       date:'Jue 25 Jun', sede:'Los Angeles Stadium',         kickoff:'2026-06-25T21:00:00Z' },
+    { id:'D6', phase:'grupo', group:'D', local:'Paraguay',       visit:'Australia',            date:'Jue 25 Jun', sede:'San Francisco Bay Area',      kickoff:'2026-06-25T21:00:00Z' },
+    { id:'E1', phase:'grupo', group:'E', local:'Costa de Marfil',visit:'Ecuador',              date:'Dom 14 Jun', sede:'Philadelphia Stadium',        kickoff:'2026-06-14T18:00:00Z' },
+    { id:'E2', phase:'grupo', group:'E', local:'Alemania',       visit:'Curazao',              date:'Dom 14 Jun', sede:'Houston Stadium',             kickoff:'2026-06-14T21:00:00Z' },
+    { id:'E3', phase:'grupo', group:'E', local:'Alemania',       visit:'Costa de Marfil',      date:'Sáb 20 Jun', sede:'Toronto Stadium',             kickoff:'2026-06-20T18:00:00Z' },
+    { id:'E4', phase:'grupo', group:'E', local:'Ecuador',        visit:'Curazao',              date:'Sáb 20 Jun', sede:'Kansas City Stadium',         kickoff:'2026-06-20T21:00:00Z' },
+    { id:'E5', phase:'grupo', group:'E', local:'Curazao',        visit:'Costa de Marfil',      date:'Jue 25 Jun', sede:'Philadelphia Stadium',        kickoff:'2026-06-26T00:00:00Z' },
+    { id:'E6', phase:'grupo', group:'E', local:'Ecuador',        visit:'Alemania',             date:'Jue 25 Jun', sede:'New York/New Jersey',         kickoff:'2026-06-26T00:00:00Z' },
+    { id:'F1', phase:'grupo', group:'F', local:'Países Bajos',   visit:'Japón',                date:'Dom 14 Jun', sede:'Dallas Stadium',              kickoff:'2026-06-14T21:00:00Z' },
+    { id:'F2', phase:'grupo', group:'F', local:'Suecia',         visit:'Túnez',                date:'Dom 14 Jun', sede:'Estadio Monterrey',           kickoff:'2026-06-15T00:00:00Z' },
+    { id:'F3', phase:'grupo', group:'F', local:'Países Bajos',   visit:'Suecia',               date:'Sáb 20 Jun', sede:'Houston Stadium',             kickoff:'2026-06-20T21:00:00Z' },
+    { id:'F4', phase:'grupo', group:'F', local:'Túnez',          visit:'Japón',                date:'Sáb 20 Jun', sede:'Estadio Monterrey',           kickoff:'2026-06-20T18:00:00Z' },
+    { id:'F5', phase:'grupo', group:'F', local:'Japón',          visit:'Suecia',               date:'Jue 25 Jun', sede:'Dallas Stadium',              kickoff:'2026-06-26T00:00:00Z' },
+    { id:'F6', phase:'grupo', group:'F', local:'Túnez',          visit:'Países Bajos',         date:'Jue 25 Jun', sede:'Kansas City Stadium',         kickoff:'2026-06-26T00:00:00Z' },
+    { id:'G1', phase:'grupo', group:'G', local:'Irán',           visit:'Nueva Zelanda',        date:'Lun 15 Jun', sede:'Los Angeles Stadium',         kickoff:'2026-06-15T18:00:00Z' },
+    { id:'G2', phase:'grupo', group:'G', local:'Bélgica',        visit:'Egipto',               date:'Lun 15 Jun', sede:'Seattle Stadium',             kickoff:'2026-06-15T21:00:00Z' },
+    { id:'G3', phase:'grupo', group:'G', local:'Bélgica',        visit:'Irán',                 date:'Dom 21 Jun', sede:'Los Angeles Stadium',         kickoff:'2026-06-21T18:00:00Z' },
+    { id:'G4', phase:'grupo', group:'G', local:'Nueva Zelanda',  visit:'Egipto',               date:'Dom 21 Jun', sede:'BC Place Vancouver',          kickoff:'2026-06-21T21:00:00Z' },
+    { id:'G5', phase:'grupo', group:'G', local:'Egipto',         visit:'Irán',                 date:'Vie 26 Jun', sede:'Seattle Stadium',             kickoff:'2026-06-26T21:00:00Z' },
+    { id:'G6', phase:'grupo', group:'G', local:'Nueva Zelanda',  visit:'Bélgica',              date:'Vie 26 Jun', sede:'BC Place Vancouver',          kickoff:'2026-06-26T21:00:00Z' },
+    { id:'H1', phase:'grupo', group:'H', local:'Arabia Saudita', visit:'Uruguay',              date:'Lun 15 Jun', sede:'Miami Stadium',               kickoff:'2026-06-15T21:00:00Z' },
+    { id:'H2', phase:'grupo', group:'H', local:'España',         visit:'Cabo Verde',           date:'Lun 15 Jun', sede:'Atlanta Stadium',             kickoff:'2026-06-16T00:00:00Z' },
+    { id:'H3', phase:'grupo', group:'H', local:'Uruguay',        visit:'Cabo Verde',           date:'Dom 21 Jun', sede:'Miami Stadium',               kickoff:'2026-06-21T21:00:00Z' },
+    { id:'H4', phase:'grupo', group:'H', local:'España',         visit:'Arabia Saudita',       date:'Dom 21 Jun', sede:'Atlanta Stadium',             kickoff:'2026-06-22T00:00:00Z' },
+    { id:'H5', phase:'grupo', group:'H', local:'Cabo Verde',     visit:'Arabia Saudita',       date:'Vie 26 Jun', sede:'Houston Stadium',             kickoff:'2026-06-27T00:00:00Z' },
+    { id:'H6', phase:'grupo', group:'H', local:'Uruguay',        visit:'España',               date:'Vie 26 Jun', sede:'Estadio Guadalajara',         kickoff:'2026-06-27T00:00:00Z' },
+    { id:'I1', phase:'grupo', group:'I', local:'Francia',        visit:'Senegal',              date:'Mar 16 Jun', sede:'New York/New Jersey',         kickoff:'2026-06-16T18:00:00Z' },
+    { id:'I2', phase:'grupo', group:'I', local:'Irak',           visit:'Noruega',              date:'Mar 16 Jun', sede:'Boston Stadium',              kickoff:'2026-06-16T21:00:00Z' },
+    { id:'I3', phase:'grupo', group:'I', local:'Noruega',        visit:'Senegal',              date:'Lun 22 Jun', sede:'New York/New Jersey',         kickoff:'2026-06-22T18:00:00Z' },
+    { id:'I4', phase:'grupo', group:'I', local:'Francia',        visit:'Irak',                 date:'Lun 22 Jun', sede:'Philadelphia Stadium',        kickoff:'2026-06-22T21:00:00Z' },
+    { id:'I5', phase:'grupo', group:'I', local:'Noruega',        visit:'Francia',              date:'Vie 26 Jun', sede:'Boston Stadium',              kickoff:'2026-06-27T00:00:00Z' },
+    { id:'I6', phase:'grupo', group:'I', local:'Senegal',        visit:'Irak',                 date:'Vie 26 Jun', sede:'Toronto Stadium',             kickoff:'2026-06-27T00:00:00Z' },
+    { id:'J1', phase:'grupo', group:'J', local:'Argentina',      visit:'Argelia',              date:'Mar 16 Jun', sede:'Kansas City Stadium',         kickoff:'2026-06-16T21:00:00Z' },
+    { id:'J2', phase:'grupo', group:'J', local:'Austria',        visit:'Jordania',             date:'Mar 16 Jun', sede:'San Francisco Bay Area',      kickoff:'2026-06-17T00:00:00Z' },
+    { id:'J3', phase:'grupo', group:'J', local:'Argentina',      visit:'Austria',              date:'Lun 22 Jun', sede:'Dallas Stadium',              kickoff:'2026-06-22T21:00:00Z' },
+    { id:'J4', phase:'grupo', group:'J', local:'Jordania',       visit:'Argelia',              date:'Lun 22 Jun', sede:'San Francisco Bay Area',      kickoff:'2026-06-23T00:00:00Z' },
+    { id:'J5', phase:'grupo', group:'J', local:'Argelia',        visit:'Austria',              date:'Sáb 27 Jun', sede:'Kansas City Stadium',         kickoff:'2026-06-27T21:00:00Z' },
+    { id:'J6', phase:'grupo', group:'J', local:'Jordania',       visit:'Argentina',            date:'Sáb 27 Jun', sede:'Dallas Stadium',              kickoff:'2026-06-27T21:00:00Z' },
+    { id:'K1', phase:'grupo', group:'K', local:'Portugal',       visit:'Congo DR',             date:'Mié 17 Jun', sede:'Houston Stadium',             kickoff:'2026-06-17T18:00:00Z' },
+    { id:'K2', phase:'grupo', group:'K', local:'Uzbekistán',     visit:'Colombia',             date:'Mié 17 Jun', sede:'Mexico City Stadium',        kickoff:'2026-06-17T21:00:00Z' },
+    { id:'K3', phase:'grupo', group:'K', local:'Portugal',       visit:'Uzbekistán',           date:'Mar 23 Jun', sede:'Houston Stadium',             kickoff:'2026-06-23T18:00:00Z' },
+    { id:'K4', phase:'grupo', group:'K', local:'Colombia',       visit:'Congo DR',             date:'Mar 23 Jun', sede:'Estadio Guadalajara',         kickoff:'2026-06-23T21:00:00Z' },
+    { id:'K5', phase:'grupo', group:'K', local:'Colombia',       visit:'Portugal',             date:'Sáb 27 Jun', sede:'Miami Stadium',               kickoff:'2026-06-28T00:00:00Z' },
+    { id:'K6', phase:'grupo', group:'K', local:'Congo DR',       visit:'Uzbekistán',           date:'Sáb 27 Jun', sede:'Atlanta Stadium',             kickoff:'2026-06-28T00:00:00Z' },
+    { id:'L1', phase:'grupo', group:'L', local:'Ghana',          visit:'Panamá',               date:'Mié 17 Jun', sede:'Toronto Stadium',             kickoff:'2026-06-17T21:00:00Z' },
+    { id:'L2', phase:'grupo', group:'L', local:'Inglaterra',     visit:'Croacia',              date:'Mié 17 Jun', sede:'Dallas Stadium',              kickoff:'2026-06-18T00:00:00Z' },
+    { id:'L3', phase:'grupo', group:'L', local:'Inglaterra',     visit:'Ghana',                date:'Mar 23 Jun', sede:'Boston Stadium',              kickoff:'2026-06-23T21:00:00Z' },
+    { id:'L4', phase:'grupo', group:'L', local:'Panamá',         visit:'Croacia',              date:'Mar 23 Jun', sede:'Toronto Stadium',             kickoff:'2026-06-24T00:00:00Z' },
+    { id:'L5', phase:'grupo', group:'L', local:'Panamá',         visit:'Inglaterra',           date:'Sáb 27 Jun', sede:'New York/New Jersey',         kickoff:'2026-06-28T00:00:00Z' },
+    { id:'L6', phase:'grupo', group:'L', local:'Croacia',        visit:'Ghana',                date:'Sáb 27 Jun', sede:'Philadelphia Stadium',        kickoff:'2026-06-28T00:00:00Z' },
   ];
 
   // -- PARTIDOS ELIMINATORIOS -------------------------------------
   const MATCHES_ELIM = [
-    { id:'R1',  phase:'octavos', group:null, local:'1° Grupo A', visit:'2° Grupo B', date:'Dom 28 Jun', sede:'Por confirmar' },
-    { id:'R2',  phase:'octavos', group:null, local:'1° Grupo C', visit:'2° Grupo D', date:'Dom 28 Jun', sede:'Por confirmar' },
-    { id:'R3',  phase:'octavos', group:null, local:'1° Grupo E', visit:'2° Grupo F', date:'Lun 29 Jun', sede:'Por confirmar' },
-    { id:'R4',  phase:'octavos', group:null, local:'1° Grupo G', visit:'2° Grupo H', date:'Lun 29 Jun', sede:'Por confirmar' },
-    { id:'R5',  phase:'octavos', group:null, local:'1° Grupo I', visit:'2° Grupo J', date:'Mar 30 Jun', sede:'Por confirmar' },
-    { id:'R6',  phase:'octavos', group:null, local:'1° Grupo K', visit:'2° Grupo L', date:'Mar 30 Jun', sede:'Por confirmar' },
-    { id:'R7',  phase:'octavos', group:null, local:'1° Grupo B', visit:'2° Grupo A', date:'Mié 1 Jul',  sede:'Por confirmar' },
-    { id:'R8',  phase:'octavos', group:null, local:'1° Grupo D', visit:'2° Grupo C', date:'Mié 1 Jul',  sede:'Por confirmar' },
-    { id:'R9',  phase:'octavos', group:null, local:'1° Grupo F', visit:'2° Grupo E', date:'Jue 2 Jul',  sede:'Por confirmar' },
-    { id:'R10', phase:'octavos', group:null, local:'1° Grupo H', visit:'2° Grupo G', date:'Jue 2 Jul',  sede:'Por confirmar' },
-    { id:'R11', phase:'octavos', group:null, local:'1° Grupo J', visit:'2° Grupo I', date:'Vie 3 Jul',  sede:'Por confirmar' },
-    { id:'R12', phase:'octavos', group:null, local:'1° Grupo L', visit:'2° Grupo K', date:'Vie 3 Jul',  sede:'Por confirmar' },
-    { id:'R13', phase:'octavos', group:null, local:'3° mejor 1', visit:'3° mejor 2', date:'Sáb 4 Jul',  sede:'Por confirmar' },
-    { id:'R14', phase:'octavos', group:null, local:'3° mejor 3', visit:'3° mejor 4', date:'Sáb 4 Jul',  sede:'Por confirmar' },
-    { id:'R15', phase:'octavos', group:null, local:'3° mejor 5', visit:'3° mejor 6', date:'Dom 5 Jul',  sede:'Por confirmar' },
-    { id:'R16', phase:'octavos', group:null, local:'3° mejor 7', visit:'3° mejor 8', date:'Dom 5 Jul',  sede:'Por confirmar' },
-    { id:'QF1', phase:'cuartos', group:null, local:'Gan. R1',  visit:'Gan. R2',  date:'Mar 7 Jul',  sede:'Por confirmar' },
-    { id:'QF2', phase:'cuartos', group:null, local:'Gan. R3',  visit:'Gan. R4',  date:'Mar 7 Jul',  sede:'Por confirmar' },
-    { id:'QF3', phase:'cuartos', group:null, local:'Gan. R5',  visit:'Gan. R6',  date:'Mié 8 Jul',  sede:'Por confirmar' },
-    { id:'QF4', phase:'cuartos', group:null, local:'Gan. R7',  visit:'Gan. R8',  date:'Mié 8 Jul',  sede:'Por confirmar' },
-    { id:'QF5', phase:'cuartos', group:null, local:'Gan. R9',  visit:'Gan. R10', date:'Jue 9 Jul',  sede:'Por confirmar' },
-    { id:'QF6', phase:'cuartos', group:null, local:'Gan. R11', visit:'Gan. R12', date:'Jue 9 Jul',  sede:'Por confirmar' },
-    { id:'QF7', phase:'cuartos', group:null, local:'Gan. R13', visit:'Gan. R14', date:'Vie 10 Jul', sede:'Por confirmar' },
-    { id:'QF8', phase:'cuartos', group:null, local:'Gan. R15', visit:'Gan. R16', date:'Vie 10 Jul', sede:'Por confirmar' },
-    { id:'SF1', phase:'semis',   group:null, local:'Gan. QF1', visit:'Gan. QF2', date:'Lun 14 Jul', sede:'Por confirmar' },
-    { id:'SF2', phase:'semis',   group:null, local:'Gan. QF3', visit:'Gan. QF4', date:'Lun 14 Jul', sede:'Por confirmar' },
-    { id:'SF3', phase:'semis',   group:null, local:'Gan. QF5', visit:'Gan. QF6', date:'Mar 15 Jul', sede:'Por confirmar' },
-    { id:'SF4', phase:'semis',   group:null, local:'Gan. QF7', visit:'Gan. QF8', date:'Mar 15 Jul', sede:'Por confirmar' },
-    { id:'3P1', phase:'tercero', group:null, local:'Per. SF1', visit:'Per. SF2', date:'Sáb 18 Jul', sede:'Por confirmar' },
-    { id:'3P2', phase:'tercero', group:null, local:'Per. SF3', visit:'Per. SF4', date:'Sáb 18 Jul', sede:'Por confirmar' },
-    { id:'FIN', phase:'final',   group:null, local:'Gan. SF1/SF2', visit:'Gan. SF3/SF4', date:'Dom 19 Jul', sede:'MetLife Stadium, NJ' },
+    { id:'R1',  phase:'octavos', group:null, local:'1° Grupo A', visit:'2° Grupo B', date:'Dom 28 Jun', sede:'Por confirmar', kickoff:'2026-06-28T20:00:00Z' },
+    { id:'R2',  phase:'octavos', group:null, local:'1° Grupo C', visit:'2° Grupo D', date:'Dom 28 Jun', sede:'Por confirmar', kickoff:'2026-06-28T23:00:00Z' },
+    { id:'R3',  phase:'octavos', group:null, local:'1° Grupo E', visit:'2° Grupo F', date:'Lun 29 Jun', sede:'Por confirmar', kickoff:'2026-06-29T20:00:00Z' },
+    { id:'R4',  phase:'octavos', group:null, local:'1° Grupo G', visit:'2° Grupo H', date:'Lun 29 Jun', sede:'Por confirmar', kickoff:'2026-06-29T23:00:00Z' },
+    { id:'R5',  phase:'octavos', group:null, local:'1° Grupo I', visit:'2° Grupo J', date:'Mar 30 Jun', sede:'Por confirmar', kickoff:'2026-06-30T20:00:00Z' },
+    { id:'R6',  phase:'octavos', group:null, local:'1° Grupo K', visit:'2° Grupo L', date:'Mar 30 Jun', sede:'Por confirmar', kickoff:'2026-06-30T23:00:00Z' },
+    { id:'R7',  phase:'octavos', group:null, local:'1° Grupo B', visit:'2° Grupo A', date:'Mié 1 Jul',  sede:'Por confirmar', kickoff:'2026-07-01T20:00:00Z' },
+    { id:'R8',  phase:'octavos', group:null, local:'1° Grupo D', visit:'2° Grupo C', date:'Mié 1 Jul',  sede:'Por confirmar', kickoff:'2026-07-01T23:00:00Z' },
+    { id:'R9',  phase:'octavos', group:null, local:'1° Grupo F', visit:'2° Grupo E', date:'Jue 2 Jul',  sede:'Por confirmar', kickoff:'2026-07-02T20:00:00Z' },
+    { id:'R10', phase:'octavos', group:null, local:'1° Grupo H', visit:'2° Grupo G', date:'Jue 2 Jul',  sede:'Por confirmar', kickoff:'2026-07-02T23:00:00Z' },
+    { id:'R11', phase:'octavos', group:null, local:'1° Grupo J', visit:'2° Grupo I', date:'Vie 3 Jul',  sede:'Por confirmar', kickoff:'2026-07-03T20:00:00Z' },
+    { id:'R12', phase:'octavos', group:null, local:'1° Grupo L', visit:'2° Grupo K', date:'Vie 3 Jul',  sede:'Por confirmar', kickoff:'2026-07-03T23:00:00Z' },
+    { id:'R13', phase:'octavos', group:null, local:'3° mejor 1', visit:'3° mejor 2', date:'Sáb 4 Jul',  sede:'Por confirmar', kickoff:'2026-07-04T20:00:00Z' },
+    { id:'R14', phase:'octavos', group:null, local:'3° mejor 3', visit:'3° mejor 4', date:'Sáb 4 Jul',  sede:'Por confirmar', kickoff:'2026-07-04T23:00:00Z' },
+    { id:'R15', phase:'octavos', group:null, local:'3° mejor 5', visit:'3° mejor 6', date:'Dom 5 Jul',  sede:'Por confirmar', kickoff:'2026-07-05T20:00:00Z' },
+    { id:'R16', phase:'octavos', group:null, local:'3° mejor 7', visit:'3° mejor 8', date:'Dom 5 Jul',  sede:'Por confirmar', kickoff:'2026-07-05T23:00:00Z' },
+    { id:'QF1', phase:'cuartos', group:null, local:'Gan. R1',  visit:'Gan. R2',  date:'Mar 7 Jul',  sede:'Por confirmar', kickoff:'2026-07-07T20:00:00Z' },
+    { id:'QF2', phase:'cuartos', group:null, local:'Gan. R3',  visit:'Gan. R4',  date:'Mar 7 Jul',  sede:'Por confirmar', kickoff:'2026-07-07T23:00:00Z' },
+    { id:'QF3', phase:'cuartos', group:null, local:'Gan. R5',  visit:'Gan. R6',  date:'Mié 8 Jul',  sede:'Por confirmar', kickoff:'2026-07-08T20:00:00Z' },
+    { id:'QF4', phase:'cuartos', group:null, local:'Gan. R7',  visit:'Gan. R8',  date:'Mié 8 Jul',  sede:'Por confirmar', kickoff:'2026-07-08T23:00:00Z' },
+    { id:'QF5', phase:'cuartos', group:null, local:'Gan. R9',  visit:'Gan. R10', date:'Jue 9 Jul',  sede:'Por confirmar', kickoff:'2026-07-09T20:00:00Z' },
+    { id:'QF6', phase:'cuartos', group:null, local:'Gan. R11', visit:'Gan. R12', date:'Jue 9 Jul',  sede:'Por confirmar', kickoff:'2026-07-09T23:00:00Z' },
+    { id:'QF7', phase:'cuartos', group:null, local:'Gan. R13', visit:'Gan. R14', date:'Vie 10 Jul', sede:'Por confirmar', kickoff:'2026-07-10T20:00:00Z' },
+    { id:'QF8', phase:'cuartos', group:null, local:'Gan. R15', visit:'Gan. R16', date:'Vie 10 Jul', sede:'Por confirmar', kickoff:'2026-07-10T23:00:00Z' },
+    { id:'SF1', phase:'semis',   group:null, local:'Gan. QF1', visit:'Gan. QF2', date:'Lun 14 Jul', sede:'Por confirmar', kickoff:'2026-07-14T20:00:00Z' },
+    { id:'SF2', phase:'semis',   group:null, local:'Gan. QF3', visit:'Gan. QF4', date:'Lun 14 Jul', sede:'Por confirmar', kickoff:'2026-07-14T23:00:00Z' },
+    { id:'SF3', phase:'semis',   group:null, local:'Gan. QF5', visit:'Gan. QF6', date:'Mar 15 Jul', sede:'Por confirmar', kickoff:'2026-07-15T20:00:00Z' },
+    { id:'SF4', phase:'semis',   group:null, local:'Gan. QF7', visit:'Gan. QF8', date:'Mar 15 Jul', sede:'Por confirmar', kickoff:'2026-07-15T23:00:00Z' },
+    { id:'3P1', phase:'tercero', group:null, local:'Per. SF1', visit:'Per. SF2', date:'Sáb 18 Jul', sede:'Por confirmar', kickoff:'2026-07-18T20:00:00Z' },
+    { id:'3P2', phase:'tercero', group:null, local:'Per. SF3', visit:'Per. SF4', date:'Sáb 18 Jul', sede:'Por confirmar', kickoff:'2026-07-18T23:00:00Z' },
+    { id:'FIN', phase:'final',   group:null, local:'Gan. SF1/SF2', visit:'Gan. SF3/SF4', date:'Dom 19 Jul', sede:'MetLife Stadium, NJ', kickoff:'2026-07-19T22:00:00Z' },
   ];
 
   const MATCHES = [...MATCHES_GRUPOS, ...MATCHES_ELIM];
@@ -336,7 +337,15 @@ const CVX = (() => {
     // Equipos eliminatorios
     const equiposElim = raw.equiposElim || {};
 
-    return { ok: true, usuarios, pronosticos, resultados, especiales, fases, equiposElim, premiosSemanales: [] };
+    // Bloqueos manuales por partido: {matchId: true|false}
+    // true = forzar bloqueo, false = forzar desbloqueo (override de auto-lock), undefined = auto
+    const bloqueados = {};
+    Object.entries(raw.bloqueados || {}).forEach(([matchId, val]) => {
+      const mid = cleanText(matchId);
+      if (mid && VALID_MATCH_IDS.has(mid)) bloqueados[mid] = !!val;
+    });
+
+    return { ok: true, usuarios, pronosticos, resultados, especiales, fases, equiposElim, bloqueados, premiosSemanales: [] };
   }
 
   // -- LLAMADAS AL API --------------------------------------------
@@ -356,7 +365,7 @@ const CVX = (() => {
   const _emptyCache = () => ({
     usuarios: [], pronosticos: {}, resultados: {}, especiales: {},
     fases: { grupo:{}, octavos:{}, cuartos:{}, semis:{}, tercero:{}, final:{} },
-    equiposElim: {}, premiosSemanales: [],
+    equiposElim: {}, bloqueados: {}, premiosSemanales: [],
   });
 
   async function getCache(forceRefresh = false) {
@@ -381,6 +390,7 @@ const CVX = (() => {
   async function getPronosticos() { return (await getCache()).pronosticos || {}; }
   async function getResultados()  { return (await getCache()).resultados  || {}; }
   async function getEspeciales()  { return (await getCache()).especiales  || {}; }
+  async function getBloqueados()  { return (await getCache()).bloqueados  || {}; }
 
   function getCurrentUser() {
     try {
@@ -450,6 +460,23 @@ const CVX = (() => {
       return { ok: true };
     } catch (err) {
       console.error('saveResultado error:', err);
+      return null;
+    }
+  }
+
+  async function bloquearPartido(matchId, forzar) {
+    // forzar: true = bloquear manualmente, false = desbloquear (override), null = eliminar (volver a auto)
+    if (!hasText(matchId)) return null;
+    try {
+      if (forzar === null) {
+        await fbDelete(`bloqueados/${matchId}`);
+      } else {
+        await fbSet(`bloqueados/${matchId}`, forzar ? true : false);
+      }
+      invalidateCache();
+      return { ok: true };
+    } catch (err) {
+      console.error('bloquearPartido error:', err);
       return null;
     }
   }
@@ -750,7 +777,8 @@ const CVX = (() => {
     getUsuarios, getPronosticos, getResultados, getEspeciales,
     getFases, getFaseUsuario, buscarUsuario,
     getCurrentUser, setCurrentUser,
-    saveUsuario, savePronostico, saveResultado, deleteResultado, saveEspecial, saveEquiposElim,
+    saveUsuario, savePronostico, saveResultado, deleteResultado, saveEspecial, saveEquiposElim, bloquearPartido,
+    getBloqueados,
     habilitarFase, cerrarFase,
     buildRanking, computeBracket, groupStandings,
     getCache, invalidateCache,

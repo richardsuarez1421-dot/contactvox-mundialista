@@ -98,6 +98,16 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(6,12,7,.95);
 .save-res-btn:hover{transform:scale(1.02);box-shadow:0 4px 16px rgba(255,143,0,.3)}
 .clear-res-btn{margin-top:4px;background:rgba(255,59,48,.12);color:#ff6b6b;border:1px solid rgba(255,59,48,.25);border-radius:6px;padding:3px 10px;font-family:'Oswald';font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:background .2s}
 .clear-res-btn:hover{background:rgba(255,59,48,.25)}
+.adm-kickoff-label{font-size:10px;color:var(--muted);margin-top:4px;font-style:italic}
+.adm-lock-btn{margin-top:4px;width:100%;border:none;border-radius:6px;padding:4px 8px;font-family:'Oswald';font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:background .2s}
+.adm-lock-btn.open{background:rgba(0,200,83,.08);color:var(--verde);border:1px solid rgba(0,200,83,.2)}
+.adm-lock-btn.open:hover{background:rgba(0,200,83,.2)}
+.adm-lock-btn.locked{background:rgba(255,143,0,.15);color:var(--amber);border:1px solid rgba(255,143,0,.3)}
+.adm-lock-btn.locked:hover{background:rgba(255,143,0,.3)}
+.adm-lock-btn.auto-locked{background:rgba(255,59,48,.1);color:#ff6b6b;border:1px solid rgba(255,59,48,.2)}
+.adm-lock-btn.auto-locked:hover{background:rgba(255,59,48,.2)}
+.adm-lock-btn.unlocked{background:rgba(100,100,255,.1);color:#aab;border:1px solid rgba(100,100,255,.2)}
+.adm-lock-btn.unlocked:hover{background:rgba(100,100,255,.2)}
 
 /* RANKING TABLE */
 .rk-hdr{display:grid;grid-template-columns:48px 1fr 60px 60px 60px 70px;gap:0;padding:8px 16px;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-weight:700;border-bottom:1px solid var(--border);margin-bottom:5px}
@@ -351,7 +361,7 @@ function logActivity(msg) {
 async function renderAdminGrupos() {
   const container = document.getElementById('admin-grupos-container');
   container.innerHTML = '';
-  const [resultados, pronosticos] = await Promise.all([CVX.getResultados(), CVX.getPronosticos()]);
+  const [resultados, pronosticos, bloqueados] = await Promise.all([CVX.getResultados(), CVX.getPronosticos(), CVX.getBloqueados()]);
   CVX.GROUPS.forEach((g, gi) => {
     const matches = CVX.MATCHES_GRUPOS.filter(m => m.group === g);
     const teams = [...new Set(matches.flatMap(m => [m.local, m.visit]))];
@@ -378,7 +388,7 @@ async function renderAdminGrupos() {
         </div>
       </div>
       <div class="gacc-body ${gi===0?'open':''}" id="adm-body-${g}">
-        ${matches.map(m => buildAdminMatchRow(m, resultados, pronosticos)).join('')}
+        ${matches.map(m => buildAdminMatchRow(m, resultados, pronosticos, bloqueados)).join('')}
         <button class="save-res-btn" onclick="saveGroupResults('${g}')">💾 Guardar resultados del Grupo ${g} y recalcular ranking</button>
       </div>`;
     container.appendChild(acc);
@@ -388,13 +398,47 @@ async function renderAdminGrupos() {
 // Construye la fila de resultado.
 // Para fases eliminatorias agrega el campo "¿Quién clasificó?" (oculto por defecto,
 // se muestra dinámicamente cuando el marcador es empate).
-function buildAdminMatchRow(m, resultados, pronosticos) {
+function buildAdminMatchRow(m, resultados, pronosticos, bloqueados) {
   const res = (resultados || {})[m.id] || {};
   const fl = CVX.FLAGS[m.local]  || '🏳️';
   const fv = CVX.FLAGS[m.visit] || '🏳️';
   const setSt = (res.l !== '' && res.l !== undefined) ? 'set' : '';
   const pronCount = Object.values(pronosticos || {}).filter(u => u[m.id]).length;
   const isElim = m.phase !== 'grupo';
+
+  // Estado de bloqueo por partido
+  const now = Date.now();
+  const kickoffMs = m.kickoff ? new Date(m.kickoff).getTime() : null;
+  const kickoffPasado = kickoffMs && now >= kickoffMs;
+  const manualOverride = bloqueados ? bloqueados[m.id] : undefined;
+  const bloqueadoAuto = manualOverride === true ? true : (manualOverride === false ? false : kickoffPasado);
+  const msRestantes = kickoffMs ? kickoffMs - now : null;
+
+  let kickoffLabel = '';
+  if (m.kickoff) {
+    const dt = new Date(m.kickoff);
+    const horaLocal = dt.toLocaleString('es-EC', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', timeZone:'America/Guayaquil' });
+    if (kickoffPasado) {
+      kickoffLabel = `⏰ Kickoff: ${horaLocal} (iniciado)`;
+    } else if (msRestantes < 3600000) {
+      const mins = Math.ceil(msRestantes / 60000);
+      kickoffLabel = `⏰ En ~${mins} min · ${horaLocal}`;
+    } else {
+      const hrs = Math.round(msRestantes / 3600000);
+      kickoffLabel = `⏰ En ~${hrs}h · ${horaLocal}`;
+    }
+  }
+
+  let lockBtnHtml = '';
+  if (manualOverride === true) {
+    lockBtnHtml = `<button class="adm-lock-btn locked" onclick="toggleMatchLock('${m.id}', false)" title="Desbloquear partido">🔒 Bloqueado · Desbloquear</button>`;
+  } else if (manualOverride === false) {
+    lockBtnHtml = `<button class="adm-lock-btn unlocked" onclick="toggleMatchLock('${m.id}', null)" title="Volver a auto">🔓 Forzado abierto · Restaurar auto</button>`;
+  } else if (kickoffPasado) {
+    lockBtnHtml = `<button class="adm-lock-btn auto-locked" onclick="toggleMatchLock('${m.id}', false)" title="Forzar apertura">⏱️ Auto-bloqueado · Forzar apertura</button>`;
+  } else {
+    lockBtnHtml = `<button class="adm-lock-btn open" onclick="toggleMatchLock('${m.id}', true)" title="Bloquear manualmente">🔓 Abierto · Bloquear ya</button>`;
+  }
 
   // Si ya hay resultado guardado con empate, restaurar el campo clasifica
   const resEmpate = isElim && res.l !== undefined && res.l !== '' && String(res.l) === String(res.v);
@@ -430,6 +474,8 @@ function buildAdminMatchRow(m, resultados, pronosticos) {
       </div>
       ${clasificaField}
       <div class="rimpact" id="imp-${m.id}">${pronCount} pronóstico${pronCount!==1?'s':''}</div>
+      ${kickoffLabel ? `<div class="adm-kickoff-label">${kickoffLabel}</div>` : ''}
+      ${lockBtnHtml}
       ${setSt ? `<button class="clear-res-btn" onclick="clearResult('${m.id}')" title="Borrar resultado">🗑️ Limpiar</button>` : ''}
     </div>
     <div class="rteam rv">
@@ -507,6 +553,19 @@ function _getAdmClasifica(matchId) {
   return checked ? checked.value : null;
 }
 
+async function toggleMatchLock(matchId, value) {
+  // value: true=forzar bloqueo, false=forzar apertura, null=restaurar auto
+  const r = await CVX.bloquearPartido(matchId, value);
+  if (r && r.ok) {
+    const msgs = { true: '🔒 Partido bloqueado', false: '🔓 Forzado abierto', null: '🔄 Restaurado a auto' };
+    toast(msgs[value] ?? '✅ Actualizado');
+    await renderAdminGrupos();
+    await renderAdminElim();
+  } else {
+    toast('⚠️ Error al cambiar el bloqueo');
+  }
+}
+
 async function clearResult(matchId) {
   if (!confirm('¿Borrar el resultado de este partido? Los puntos serán removidos del ranking.')) return;
   const r = await CVX.deleteResultado(matchId);
@@ -554,7 +613,7 @@ function setPhaseUnlocks(obj) {
 }
 
 async function renderAdminElim() {
-  const [resultados, pronosticos, fases] = await Promise.all([CVX.getResultados(), CVX.getPronosticos(), CVX.getFases()]);
+  const [resultados, pronosticos, fases, bloqueados] = await Promise.all([CVX.getResultados(), CVX.getPronosticos(), CVX.getFases(), CVX.getBloqueados()]);
   const elimPhases = CVX.PHASES.filter(p => p.id !== 'grupo');
 
   // El toggle de habilitación ahora vive en "Control de fases" (servidor).
@@ -587,7 +646,7 @@ async function renderAdminElim() {
     sec.id = `adm-fase-${ph.id}`;
 
     const bodyContent = buildEquiposEditForm(ph.id, matches)
-      + matches.map(m => buildAdminMatchRow(m, resultados, pronosticos)).join('')
+      + matches.map(m => buildAdminMatchRow(m, resultados, pronosticos, bloqueados)).join('')
       + `<button class="save-res-btn" onclick="saveElimResults('${ph.id}')">💾 Guardar resultados — ${ph.label}</button>`;
 
     sec.innerHTML = `
