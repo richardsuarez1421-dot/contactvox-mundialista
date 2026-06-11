@@ -1,52 +1,66 @@
 // ================================================================
-// Copa Mundial Contactvox 2026 — Data Layer v4 (Google Sheets)
+// Copa Mundial Contactvox 2026 - Data Layer v5 (Firebase RTDB)
 // ================================================================
-// Conectado a Google Sheets via Apps Script Web App.
-// El diseño de index.html y admin.html no cambia en absoluto.
+// Conectado a Firebase Realtime Database via REST API.
+// El diseno de index.html y admin.html no cambia en absoluto.
 //
-// SISTEMA DE PUNTOS v4:
-// ── FASE DE GRUPOS ──────────────────────────────────────────────
-//   Marcador exacto                                        → 5 pts
-//   Ganador o empate correcto                              → 2 pts
-//   Ningún acierto                                         → 0 pts
-//   (Se elimina el bonus por diferencia de goles)
+// SISTEMA DE PUNTOS v5:
+// -- FASE DE GRUPOS -----------------------------------------------
+//   Marcador exacto                                        -> 5 pts
+//   Ganador o empate correcto                              -> 2 pts
+//   Ningun acierto                                         -> 0 pts
 //
-// ── OCTAVOS ─────────────────────────────────────────────────────
-//   Marcador exacto + clasificado correcto                 → 6 pts
-//   Solo clasificado correcto                              → 3 pts
+// -- OCTAVOS ------------------------------------------------------
+//   Marcador exacto + clasificado correcto                 -> 6 pts
+//   Solo clasificado correcto                              -> 3 pts
 //
-// ── CUARTOS ─────────────────────────────────────────────────────
-//   Marcador exacto + clasificado correcto                 → 8 pts
-//   Solo clasificado correcto                              → 4 pts
+// -- CUARTOS ------------------------------------------------------
+//   Marcador exacto + clasificado correcto                 -> 8 pts
+//   Solo clasificado correcto                              -> 4 pts
 //
-// ── SEMIFINALES ─────────────────────────────────────────────────
-//   Marcador exacto + clasificado correcto                 → 10 pts
-//   Solo clasificado correcto                              → 5 pts
+// -- SEMIFINALES --------------------------------------------------
+//   Marcador exacto + clasificado correcto                 -> 10 pts
+//   Solo clasificado correcto                              -> 5 pts
 //
-// ── TERCER PUESTO ───────────────────────────────────────────────
-//   Marcador exacto + clasificado correcto                 → 8 pts
-//   Solo clasificado correcto                              → 4 pts
+// -- TERCER PUESTO ------------------------------------------------
+//   Marcador exacto + clasificado correcto                 -> 8 pts
+//   Solo clasificado correcto                              -> 4 pts
 //
-// ── GRAN FINAL ──────────────────────────────────────────────────
-//   Marcador exacto + clasificado correcto                 → 15 pts
-//   Solo clasificado correcto (campeón)                    → 8 pts
+// -- GRAN FINAL ---------------------------------------------------
+//   Marcador exacto + clasificado correcto                 -> 15 pts
+//   Solo clasificado correcto (campeon)                    -> 8 pts
 //
-// ── LÓGICA DE PENALES ───────────────────────────────────────────
-//   Si el marcador global final es empate, el campo
-//   `clasifica` ('local'|'visit') determina quién avanzó.
-//   Se evalúa el marcador GLOBAL FINAL (incluye prórroga/penales).
-//
-// ── PREDICCIONES ESPECIALES ─────────────────────────────────────
-//   Campeón del mundo → 10 pts  |  Subcampeón      → 6 pts
-//   Goleador          → 8 pts   |  Revelación       → 5 pts
+// -- PREDICCIONES ESPECIALES --------------------------------------
+//   Campeon del mundo -> 10 pts  |  Subcampeon      -> 6 pts
+//   Goleador          -> 8 pts   |  Revelacion       -> 5 pts
 // ================================================================
 
 const CVX = (() => {
 
-  // ── URL DEL WEB APP ───────────────────────────────────────────
-  const API_URL = 'https://script.google.com/macros/s/AKfycbyGJhn8dALyik8ITGXuJwJEsNJh3WJsQvwdfF_ysaMDvSGwXtR1ADUwBoWnEKBmNgsX2Q/exec';
+  // -- FIREBASE REALTIME DATABASE URL -----------------------------
+  const FB_URL = 'https://mundialista-cvx-default-rtdb.firebaseio.com';
 
-  // ── TABLA DE PUNTOS POR FASE ──────────────────────────────────
+  // -- WHITELIST DE PARTICIPANTES ---------------------------------
+  const ALLOWED_NAMES = [
+    'Alexander Conde','Bryan Cortez','Christian Freire','Daniel Tapia',
+    'David Chicaiza','Elizabeth Carrillo','Evelyn Achig','Fabian Olmedo',
+    'Fanny Mayorga','Henry Tito','Isak Gomez','Jair Delgado',
+    'Jhon Tanicuchi','Jhonny Andrade','Jimmy Pardo','Joan Martinez',
+    'Leyla Berrones','Luis Aguirre','Luis Bastidas','Luis Machado',
+    'Mario Vela','Mariela Garzon','Naymar Sanchez','Paul Cabrera',
+    'Richard Suarez','Thalia Ortega','Veronica Bermudez',
+  ];
+  const ALLOWED_NORM = new Set(ALLOWED_NAMES.map(n =>
+    n.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  ));
+
+  function isAllowedUser(name) {
+    if (!name) return false;
+    const n = name.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    return ALLOWED_NORM.has(n);
+  }
+
+  // -- TABLA DE PUNTOS POR FASE -----------------------------------
   const PUNTOS = {
     grupo:   { exacto: 5, ganador: 2, fallo: 0 },
     octavos: { exacto: 6, clasificado: 3, fallo: 0 },
@@ -56,7 +70,7 @@ const CVX = (() => {
     final:   { exacto: 15, clasificado: 8, fallo: 0 },
   };
 
-  // ── SEMANAS DEL TORNEO ─────────────────────────────────────────
+  // -- SEMANAS DEL TORNEO -----------------------------------------
   const SEMANAS = [
     { id:1, label:'Semana 1', inicio:'2026-06-11', fin:'2026-06-17' },
     { id:2, label:'Semana 2', inicio:'2026-06-18', fin:'2026-06-24' },
@@ -66,14 +80,14 @@ const CVX = (() => {
     { id:6, label:'Semana 6', inicio:'2026-07-16', fin:'2026-07-19' },
   ];
 
-  // ── ÁREAS DE LA EMPRESA ────────────────────────────────────────
+  // -- AREAS DE LA EMPRESA ----------------------------------------
   const AREAS = [
-    'Soporte','Seguridades','Desarrollo','Diseño','QA',
+    'Soporte','Seguridades','Desarrollo','Diseno','QA',
     'Proyectos','Gerencia','Comercial','Recursos Humanos',
-    'Innovación','Coordinación'
+    'Innovacion','Coordinacion'
   ];
 
-  // ── PARTIDOS FASE DE GRUPOS (72 partidos) ─────────────────────
+  // -- PARTIDOS FASE DE GRUPOS (72 partidos) ----------------------
   const MATCHES_GRUPOS = [
     { id:'A1', phase:'grupo', group:'A', local:'México',         visit:'Sudáfrica',            date:'Jue 11 Jun', sede:'Mexico City Stadium' },
     { id:'A2', phase:'grupo', group:'A', local:'Corea del Sur',  visit:'Chequia',              date:'Jue 11 Jun', sede:'Estadio Guadalajara' },
@@ -149,7 +163,7 @@ const CVX = (() => {
     { id:'L6', phase:'grupo', group:'L', local:'Croacia',        visit:'Ghana',                date:'Sáb 27 Jun', sede:'Philadelphia Stadium' },
   ];
 
-  // ── PARTIDOS ELIMINATORIOS ─────────────────────────────────────
+  // -- PARTIDOS ELIMINATORIOS -------------------------------------
   const MATCHES_ELIM = [
     { id:'R1',  phase:'octavos', group:null, local:'1° Grupo A', visit:'2° Grupo B', date:'Dom 28 Jun', sede:'Por confirmar' },
     { id:'R2',  phase:'octavos', group:null, local:'1° Grupo C', visit:'2° Grupo D', date:'Dom 28 Jun', sede:'Por confirmar' },
@@ -195,7 +209,7 @@ const CVX = (() => {
     { id:'final',   label:'Gran Final',       icon:'🏆', unlocked: false },
   ];
 
-  // ── FLAGS ──────────────────────────────────────────────────────
+  // -- FLAGS ------------------------------------------------------
   const FLAGS = {
     'México':'🇲🇽','Sudáfrica':'🇿🇦','Corea del Sur':'🇰🇷','Chequia':'🇨🇿',
     'Canadá':'🇨🇦','Bosnia y Herzegovina':'🇧🇦','Bosnia y Herz.':'🇧🇦',
@@ -212,35 +226,66 @@ const CVX = (() => {
     'Inglaterra':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Croacia':'🇭🇷',
   };
 
-  // ── CACHÉ LOCAL (evita llamadas repetidas al API) ──────────────
+  // -- CACHE LOCAL ------------------------------------------------
   let _cache    = null;
   let _cacheTs  = 0;
-  let _inflight = null;   // promesa en vuelo — evita solicitudes duplicadas
-  let _postSem  = 0;      // semáforo para limitar POSTs concurrentes
-  const CACHE_TTL = 90000; // 90 segundos
+  let _inflight = null;
+  const CACHE_TTL = 30000; // 30s — Firebase es rapido, podemos refrescar mas seguido
   const VALID_MATCH_IDS = new Set(MATCHES.map(m => m.id));
 
   function hasText(value) {
     return value !== null && value !== undefined && String(value).trim() !== '' && String(value) !== 'undefined';
   }
-
   function cleanText(value) {
     return hasText(value) ? String(value).trim() : '';
   }
 
-  function normalizeApiData(data) {
-    const usuarios = Array.isArray(data?.usuarios)
-      ? data.usuarios
-          .map(u => ({
-            id: cleanText(u?.id),
-            name: cleanText(u?.name),
-            dept: cleanText(u?.dept) || 'General',
-          }))
-          .filter(u => u.id && u.name)
-      : [];
+  // -- FIREBASE REST API ------------------------------------------
 
+  async function fbGet(path) {
+    const res = await fetch(`${FB_URL}/${path}.json`);
+    if (!res.ok) throw new Error(`Firebase GET error: ${res.status}`);
+    return await res.json();
+  }
+
+  async function fbSet(path, data) {
+    const res = await fetch(`${FB_URL}/${path}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(`Firebase PUT error: ${res.status}`);
+    return await res.json();
+  }
+
+  async function fbUpdate(path, data) {
+    const res = await fetch(`${FB_URL}/${path}.json`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(`Firebase PATCH error: ${res.status}`);
+    return await res.json();
+  }
+
+  // -- NORMALIZACION DE DATOS DE FIREBASE -------------------------
+
+  function normalizeFirebaseData(raw) {
+    if (!raw) raw = {};
+
+    // Usuarios: Firebase guarda {userId: {name, dept}} -> convertir a array
+    const usuariosObj = raw.usuarios || {};
+    const usuarios = Object.entries(usuariosObj)
+      .map(([id, u]) => ({
+        id: cleanText(id),
+        name: cleanText(u?.name),
+        dept: cleanText(u?.dept) || 'General',
+      }))
+      .filter(u => u.id && u.name);
+
+    // Pronosticos: {userId: {matchId: {l, v, fase, clasifica}}}
     const pronosticos = {};
-    Object.entries(data?.pronosticos || {}).forEach(([userId, matches]) => {
+    Object.entries(raw.pronosticos || {}).forEach(([userId, matches]) => {
       const uid = cleanText(userId);
       if (!uid || !matches || typeof matches !== 'object') return;
       Object.entries(matches).forEach(([matchId, p]) => {
@@ -254,18 +299,20 @@ const CVX = (() => {
       });
     });
 
+    // Resultados: {matchId: {l, v, clasifica}}
     const resultados = {};
-    Object.entries(data?.resultados || {}).forEach(([matchId, r]) => {
+    Object.entries(raw.resultados || {}).forEach(([matchId, r]) => {
       const mid = cleanText(matchId);
       if (!mid || (!VALID_MATCH_IDS.has(mid) && !mid.startsWith('ESP_')) || !r) return;
       const l = cleanText(r.l);
       const v = cleanText(r.v);
       if (l === '' && v === '') return;
-      resultados[mid] = { l, v, visita: cleanText(r.visita) || v, clasifica: cleanText(r.clasifica) || '' };
+      resultados[mid] = { l, v, visita: v, clasifica: cleanText(r.clasifica) || '' };
     });
 
+    // Especiales: {userId: {campeon, sub, goleador, revelacion}}
     const especiales = {};
-    Object.entries(data?.especiales || {}).forEach(([userId, e]) => {
+    Object.entries(raw.especiales || {}).forEach(([userId, e]) => {
       const uid = cleanText(userId);
       if (!uid || !e || typeof e !== 'object') return;
       especiales[uid] = {
@@ -276,56 +323,29 @@ const CVX = (() => {
       };
     });
 
-    // Fases (estado de habilitación/cierre por el admin)
-    const fases = data?.fases || { grupo:{}, octavos:{}, cuartos:{}, semis:{}, tercero:{}, final:{} };
+    // Fases
+    const fasesDefault = { grupo:{}, octavos:{}, cuartos:{}, semis:{}, tercero:{}, final:{}, especiales:{} };
+    const fases = { ...fasesDefault, ...(raw.fases || {}) };
 
-    // Equipos eliminatorios (nombres editables para las fases elim)
-    const equiposElim = data?.equiposElim || {};
+    // Equipos eliminatorios
+    const equiposElim = raw.equiposElim || {};
 
-    // Premios semanales (opcional)
-    const premiosSemanales = Array.isArray(data?.premiosSemanales) ? data.premiosSemanales : [];
-
-    return { ok: true, usuarios, pronosticos, resultados, especiales, fases, equiposElim, premiosSemanales };
+    return { ok: true, usuarios, pronosticos, resultados, especiales, fases, equiposElim, premiosSemanales: [] };
   }
 
-  // ── LLAMADAS AL API ────────────────────────────────────────────
+  // -- LLAMADAS AL API --------------------------------------------
 
   async function apiGet() {
     try {
-      const res = await fetch(`${API_URL}?action=getAll&t=${Date.now()}`);
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error || 'Error en getAll');
-      return normalizeApiData(data);
+      const raw = await fbGet('');
+      return normalizeFirebaseData(raw);
     } catch (err) {
       console.error('CVX apiGet error:', err);
       return null;
     }
   }
 
-  // Máximo 3 POSTs simultáneos — evita saturar Apps Script con guardados en masa
-  async function apiPost(payload) {
-    while (_postSem >= 3) await new Promise(r => setTimeout(r, 300));
-    _postSem++;
-    try {
-      const res = await fetch(API_URL, {
-        method:  'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body:    JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error || 'Error en POST');
-      return data;
-    } catch (err) {
-      console.error('CVX apiPost error:', err);
-      return null;
-    } finally {
-      _postSem--;
-    }
-  }
-
-  // ── CACHÉ ──────────────────────────────────────────────────────
-  // Si ya hay un fetch en vuelo, los llamadores adicionales esperan ESA misma
-  // promesa en lugar de lanzar una nueva solicitud HTTP.
+  // -- CACHE ------------------------------------------------------
 
   const _emptyCache = () => ({
     usuarios: [], pronosticos: {}, resultados: {}, especiales: {},
@@ -349,7 +369,7 @@ const CVX = (() => {
 
   function invalidateCache() { _cache = null; _cacheTs = 0; }
 
-  // ── GETTERS ────────────────────────────────────────────────────
+  // -- GETTERS ----------------------------------------------------
 
   async function getUsuarios()    { return (await getCache()).usuarios    || []; }
   async function getPronosticos() { return (await getCache()).pronosticos || {}; }
@@ -374,57 +394,93 @@ const CVX = (() => {
     localStorage.setItem('cvx2026_current_user', JSON.stringify(user));
   }
 
-  // ── SETTERS ────────────────────────────────────────────────────
+  // -- SETTERS (Firebase) -----------------------------------------
 
   async function saveUsuario(user) {
     if (!user.id || !user.name) return null;
-    const r = await apiPost({ action: 'saveUsuario', id: user.id, name: user.name, dept: user.dept || 'General' });
-    if (r) invalidateCache();
-    return r;
+    if (!isAllowedUser(user.name)) { console.error('Usuario no autorizado'); return null; }
+    try {
+      await fbSet(`usuarios/${user.id}`, {
+        name: user.name,
+        dept: user.dept || 'General',
+        createdAt: new Date().toISOString(),
+      });
+      invalidateCache();
+      return { ok: true };
+    } catch (err) {
+      console.error('saveUsuario error:', err);
+      return null;
+    }
   }
 
-  // Nueva firma: savePronostico(userId, matchId, l, v, fase, clasifica)
-  // clasifica: 'local' | 'visit' | '' — solo para eliminatorias con empate
   async function savePronostico(userId, matchId, l, v, fase, clasifica) {
     if (!hasText(userId) || !hasText(matchId) || userId === 'undefined' || !VALID_MATCH_IDS.has(String(matchId))) return null;
-    const payload = { action: 'savePronostico', userId, matchId, local: String(l), visita: String(v), fase: String(fase || ''), clasifica: String(clasifica || '') };
-    const r = await apiPost(payload);
-    if (r) invalidateCache();
-    return r;
+    try {
+      await fbSet(`pronosticos/${userId}/${matchId}`, {
+        l: String(l),
+        v: String(v),
+        fase: String(fase || ''),
+        clasifica: String(clasifica || ''),
+        savedAt: new Date().toISOString(),
+      });
+      invalidateCache();
+      return { ok: true };
+    } catch (err) {
+      console.error('savePronostico error:', err);
+      return null;
+    }
   }
 
-  // clasifica: 'local' | 'visit' | '' — solo cuando l === v en eliminatoria
   async function saveResultado(matchId, l, v, clasifica) {
-    const payload = { action: 'saveResultado', matchId, local: String(l), visita: String(v), clasifica: String(clasifica || '') };
-    const r = await apiPost(payload);
-    if (r) invalidateCache();
-    return r;
+    if (!hasText(matchId)) return null;
+    try {
+      await fbSet(`resultados/${matchId}`, {
+        l: String(l),
+        v: String(v),
+        clasifica: String(clasifica || ''),
+        updatedAt: new Date().toISOString(),
+      });
+      invalidateCache();
+      return { ok: true };
+    } catch (err) {
+      console.error('saveResultado error:', err);
+      return null;
+    }
   }
 
   async function saveEspecial(userId, data) {
     if (!hasText(userId) || userId === 'undefined') return null;
-    const r = await apiPost({ action: 'saveEspecial', userId,
-      campeon: data.campeon || '', sub: data.sub || '',
-      goleador: data.goleador || '', revelacion: data.revelacion || '' });
-    if (r) invalidateCache();
-    return r;
+    try {
+      await fbSet(`especiales/${userId}`, {
+        campeon: data.campeon || '',
+        sub: data.sub || '',
+        goleador: data.goleador || '',
+        revelacion: data.revelacion || '',
+      });
+      invalidateCache();
+      return { ok: true };
+    } catch (err) {
+      console.error('saveEspecial error:', err);
+      return null;
+    }
   }
 
   async function saveEquiposElim(body) {
-    const r = await apiPost({ action: 'saveEquiposElim', ...body });
-    if (r) invalidateCache();
-    return r;
+    if (!body.matchId) return null;
+    try {
+      await fbSet(`equiposElim/${body.matchId}`, {
+        local: body.local || '',
+        visit: body.visit || '',
+      });
+      invalidateCache();
+      return { ok: true };
+    } catch (err) {
+      console.error('saveEquiposElim error:', err);
+      return null;
+    }
   }
 
-  // ── LÓGICA DE PUNTOS ───────────────────────────────────────────
-  //
-  // pron: { l, v, clasifica? }   — pronóstico del usuario
-  // res:  { l, v, clasifica? }   — resultado oficial
-  // phase: string
-  //
-  // En grupos, el empate es resultado válido → ganador = 'E'.
-  // En eliminatoria, si l === v, se usa .clasifica para saber quién avanzó.
-  // El marcador evaluado es el GLOBAL FINAL (incluye prórroga/penales).
+  // -- LOGICA DE PUNTOS -------------------------------------------
 
   function calcPoints(pron, res, phase) {
     if (!res || res.l === '' || res.l === null || res.l === undefined)
@@ -436,7 +492,6 @@ const CVX = (() => {
     const rl = parseInt(res.l),  rv = parseInt(res.v);
     const P  = PUNTOS[phase] || PUNTOS.grupo;
 
-    // ── FASE DE GRUPOS ──────────────────────────────────────────
     if (phase === 'grupo') {
       if (pl === rl && pv === rv)
         return { pts: P.exacto, label: 'exacto',
@@ -450,26 +505,21 @@ const CVX = (() => {
         detalle: `✗ Incorrecto (salió ${rl}-${rv}) → 0 pts` };
     }
 
-    // ── ELIMINATORIA ────────────────────────────────────────────
-    // 1) Quién clasificó realmente
+    // ELIMINATORIA
     let realClasifica;
     if (rl !== rv) {
       realClasifica = rl > rv ? 'local' : 'visit';
     } else {
-      // Empate en marcador global → necesitamos el campo clasifica del resultado
       realClasifica = res.clasifica || 'local';
     }
 
-    // 2) Quién clasifica según el pronóstico
     let pronClasifica;
     if (pl !== pv) {
       pronClasifica = pl > pv ? 'local' : 'visit';
     } else {
-      // Pronóstico empatado → necesitamos el campo clasifica del pronóstico
       pronClasifica = pron.clasifica || 'local';
     }
 
-    // 3) Evaluar
     const exactoMarcador  = (pl === rl && pv === rv);
     const aciertaClasifica = (pronClasifica === realClasifica);
 
@@ -483,7 +533,7 @@ const CVX = (() => {
       detalle: `✗ Clasificado incorrecto (salió ${rl}-${rv}) → 0 pts` };
   }
 
-  // ── ESPECIALES ─────────────────────────────────────────────────
+  // -- ESPECIALES -------------------------------------------------
   function calcEspeciales(esp, resultados) {
     if (!esp) return 0;
     let pts = 0;
@@ -496,7 +546,7 @@ const CVX = (() => {
     return pts;
   }
 
-  // ── RANKING ────────────────────────────────────────────────────
+  // -- RANKING ----------------------------------------------------
   async function buildRanking() {
     const data = await getCache();
     const { usuarios, pronosticos, resultados, especiales } = data;
@@ -526,33 +576,40 @@ const CVX = (() => {
     }).sort((a, b) => b.pts - a.pts || b.exactos - a.exactos || b.clasificados - a.clasificados);
   }
 
-  // ── FASES ──────────────────────────────────────────────────────
+  // -- FASES ------------------------------------------------------
   async function getFases() {
     const data = await getCache();
     return data.fases || { grupo:{}, octavos:{}, cuartos:{}, semis:{}, tercero:{}, final:{} };
   }
 
   async function habilitarFase(fase) {
-    const r = await apiPost({ action: 'habilitarFase', fase });
-    if (r) invalidateCache();
-    return r;
+    try {
+      await fbUpdate(`fases/${fase}`, { habilitada: true, habilitadaEn: new Date().toISOString() });
+      invalidateCache();
+      return { ok: true };
+    } catch (err) {
+      console.error('habilitarFase error:', err);
+      return null;
+    }
   }
 
   async function cerrarFase(fase) {
-    const r = await apiPost({ action: 'cerrarFase', fase });
-    if (r) invalidateCache();
-    return r;
+    try {
+      await fbUpdate(`fases/${fase}`, { cerrada: true, cerradaEn: new Date().toISOString() });
+      invalidateCache();
+      return { ok: true };
+    } catch (err) {
+      console.error('cerrarFase error:', err);
+      return null;
+    }
   }
 
-  // getFaseUsuario(userId) — devuelve qué fases el usuario ya pronosticó
-  // Resultado: { grupo: true, octavos: false, ... }
   async function getFaseUsuario(userId) {
     const prons = await getPronosticos();
     const userProns = (prons || {})[userId] || {};
     const out = { grupo: false, octavos: false, cuartos: false, semis: false, tercero: false, final: false };
     const fasesPronosticadas = new Set();
     Object.entries(userProns).forEach(([mid, p]) => {
-      // Usa la fase guardada; si falta (datos antiguos), la infiere del partido
       let fase = p.fase;
       if (!fase) { const m = MATCHES.find(x => x.id === mid); fase = m ? m.phase : ''; }
       if (fase) fasesPronosticadas.add(fase);
@@ -561,7 +618,7 @@ const CVX = (() => {
     return out;
   }
 
-  // ── BÚSQUEDA DE USUARIOS ────────────────────────────────────────
+  // -- BUSQUEDA DE USUARIOS ---------------------------------------
   async function buscarUsuario(nombre) {
     if (!nombre || !nombre.trim()) return [];
     const q = nombre.trim().toLowerCase();
@@ -571,19 +628,14 @@ const CVX = (() => {
       .slice(0, 5);
   }
 
-  // ── CUADRO ELIMINATORIO AUTOMÁTICO ─────────────────────────────
-  // Normaliza nombres de equipos que aparecen escritos distinto.
-  const TEAM_ALIAS = {
-    'Bosnia y Herz.': 'Bosnia y Herzegovina',
-  };
+  // -- CUADRO ELIMINATORIO AUTOMATICO -----------------------------
+  const TEAM_ALIAS = { 'Bosnia y Herz.': 'Bosnia y Herzegovina' };
   function normTeam(t) { const s = cleanText(t); return TEAM_ALIAS[s] || s; }
 
-  // Tabla de posiciones de un grupo a partir de los resultados.
   function groupStandings(groupLetter, resultados) {
     const ms = MATCHES_GRUPOS.filter(m => m.group === groupLetter);
     const table = {};
     const ensure = t => { if (!table[t]) table[t] = { team: t, pts: 0, gf: 0, ga: 0, gd: 0, pj: 0 }; return table[t]; };
-    // Registrar todos los equipos del grupo aunque no tengan resultados aún
     ms.forEach(m => { ensure(normTeam(m.local)); ensure(normTeam(m.visit)); });
     let jugados = 0;
     ms.forEach(m => {
@@ -602,28 +654,20 @@ const CVX = (() => {
     return { allPlayed: jugados === ms.length, jugados, sorted };
   }
 
-  // Ganador de un partido eliminatorio ya con nombres resueltos.
   function elimWinner(localName, visitName, res) {
     if (!res || res.l === '' || res.l === undefined || res.l === null) return null;
     const l = parseInt(res.l), v = parseInt(res.v);
     if (isNaN(l) || isNaN(v)) return null;
     if (l > v) return { win: localName, lose: visitName };
     if (v > l) return { win: visitName, lose: localName };
-    // Empate → se usa clasifica (penales)
     if (res.clasifica === 'local') return { win: localName, lose: visitName };
     if (res.clasifica === 'visit') return { win: visitName, lose: localName };
     return null;
   }
 
-  // Construye el cuadro eliminatorio completo (nombres por matchId) usando
-  // la lógica del mundial: 1°/2° de grupo + 8 mejores terceros en octavos, y
-  // avance de ganadores en las rondas siguientes. Devuelve { matchId: {local, visit} }
-  // solo para los partidos cuyos equipos ya quedaron determinados.
   function computeBracket(resultados) {
     const out = {};
-    const resolved = {}; // matchId -> { local, visit } (nombres reales o etiqueta original)
-
-    // 1) Posiciones por grupo — usa posiciones provisionales si hay al menos 1 resultado
+    const resolved = {};
     const standings = {};
     const terceros = [];
     GROUPS.forEach(g => {
@@ -646,7 +690,6 @@ const CVX = (() => {
       return null;
     }
 
-    // Resuelve "Gan. X" o "Per. X" usando los nombres ya resueltos de X
     function resolveElimRef(label) {
       let mm = label.match(/^Gan\. ([A-Z0-9]+)$/);
       if (mm) {
@@ -665,14 +708,12 @@ const CVX = (() => {
       return null;
     }
 
-    // Procesa los partidos en orden de fase (octavos→cuartos→semis→tercero→final)
     const phaseOrder = ['octavos', 'cuartos', 'semis', 'tercero', 'final'];
     phaseOrder.forEach(phase => {
       MATCHES_ELIM.filter(m => m.phase === phase).forEach(m => {
         const localReal = resolveGroupLabel(m.local) || resolveElimRef(m.local);
         const visitReal = resolveGroupLabel(m.visit) || resolveElimRef(m.visit);
         resolved[m.id] = { local: localReal || m.local, visit: visitReal || m.visit };
-        // Solo guardamos lo que realmente quedó determinado
         if (localReal || visitReal) {
           out[m.id] = { local: localReal || '', visit: visitReal || '' };
         }
@@ -682,10 +723,11 @@ const CVX = (() => {
     return out;
   }
 
-  // ── API PÚBLICA ────────────────────────────────────────────────
+  // -- API PUBLICA ------------------------------------------------
   return {
     MATCHES, MATCHES_GRUPOS, MATCHES_ELIM,
     GROUPS, PHASES, FLAGS, PUNTOS, SEMANAS, AREAS,
+    ALLOWED_NAMES,
     calcPoints, calcEspeciales,
     getUsuarios, getPronosticos, getResultados, getEspeciales,
     getFases, getFaseUsuario, buscarUsuario,
