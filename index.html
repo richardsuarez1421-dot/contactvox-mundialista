@@ -99,22 +99,10 @@ h2.stitle{font-family:'Bebas Neue';font-size:clamp(30px,5vw,50px);letter-spacing
 .user-banner .pts-badge{font-family:'Bebas Neue';font-size:24px;color:var(--oro)}
 .no-user-banner{background:rgba(255,23,68,.08);border:1px solid rgba(255,23,68,.3);border-radius:12px;padding:16px 22px;margin-bottom:28px;font-size:13px;color:#ff8a80;display:flex;align-items:center;gap:12px}
 
-/* Grupo accordion */
-.grupo-acc{margin-bottom:10px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-.grupo-hdr{background:var(--card);padding:16px 22px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background .2s;user-select:none}
-.grupo-hdr:hover{background:var(--card2)}
-.grupo-hdr.open{background:var(--card2);border-bottom:1px solid var(--border)}
-.grupo-title{display:flex;align-items:center;gap:14px}
-.grupo-letter{font-family:'Bebas Neue';font-size:32px;color:var(--verde);width:36px;line-height:1}
-.grupo-info{display:flex;flex-direction:column}
-.grupo-name{font-family:'Oswald';font-size:15px;font-weight:600;letter-spacing:1px}
-.grupo-teams{font-size:11px;color:var(--muted);margin-top:2px}
-.grupo-meta{display:flex;align-items:center;gap:16px}
-.grupo-pts-chip{font-family:'Oswald';font-size:14px;color:var(--oro);background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.25);border-radius:50px;padding:3px 12px;white-space:nowrap}
-.acc-arrow{font-size:14px;color:var(--muted);transition:transform .3s}
-.acc-arrow.open{transform:rotate(180deg)}
-.grupo-body{display:none;padding:12px 16px 16px}
-.grupo-body.open{display:block}
+/* Vista calendario por fechas */
+.cal-day{margin-bottom:28px}
+.cal-day-hdr{font-family:'Oswald';font-size:13px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--verde);padding:7px 4px 9px;border-bottom:1px solid var(--border);margin-bottom:10px}
+.cal-matches{display:flex;flex-direction:column}
 
 /* Match card inside accordion */
 .match-row{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:8px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;transition:border-color .2s}
@@ -125,7 +113,9 @@ h2.stitle{font-family:'Bebas Neue';font-size:clamp(30px,5vw,50px);letter-spacing
 .mflag{font-size:22px;flex-shrink:0}
 .mname{font-size:13px;font-weight:600;color:#fff}
 .mcenter{text-align:center;min-width:120px}
-.mdate{font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:6px}
+.mhora-row{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:5px}
+.mhora{font-size:11px;font-weight:700;color:var(--text);letter-spacing:.5px}
+.mgrupo-badge{font-size:9px;font-weight:700;color:var(--verde);background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.25);border-radius:50px;padding:1px 7px;letter-spacing:.5px}
 .msede{font-size:9px;color:rgba(107,145,112,.6);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
 .score-row-inp{display:flex;align-items:center;justify-content:center;gap:6px}
 .sin{width:44px;height:38px;background:var(--dark);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Bebas Neue';font-size:20px;text-align:center;outline:none;transition:border-color .2s;-moz-appearance:textfield}
@@ -596,7 +586,7 @@ async function updateUI() {
   await refreshAllChips();
 }
 
-// ══ RENDER GRUPOS ACORDEÓN ══
+// ══ RENDER GRUPOS — VISTA CALENDARIO ══
 async function renderGrupos() {
   const container = document.getElementById('grupos-container');
   container.innerHTML = '';
@@ -609,43 +599,31 @@ async function renderGrupos() {
   const userProns = (currentUser && pronosticos[currentUser.id]) || {};
   const now = Date.now();
 
-  CVX.GROUPS.forEach((g, gi) => {
-    const matches = CVX.MATCHES_GRUPOS.filter(m => m.group === g);
-    const teams = [...new Set(matches.flatMap(m => [m.local, m.visit]))];
-    const teamsStr = teams.slice(0,4).map(t => (CVX.FLAGS[t]||'') + ' ' + t).join(' · ');
+  // Agrupar partidos por fecha Ecuador (YYYY-MM-DD)
+  const byDate = {};
+  CVX.MATCHES_GRUPOS.forEach(m => {
+    const ymd = kickoffToEcuadorDate(m.kickoff);
+    if (!byDate[ymd]) byDate[ymd] = [];
+    byDate[ymd].push(m);
+  });
 
-    const acc = document.createElement('div');
-    acc.className = 'grupo-acc';
-    acc.id = `acc-${g}`;
+  Object.keys(byDate).sort().forEach(ymd => {
+    const matches = byDate[ymd].slice().sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
 
-    // Contar cuántos partidos guardó el usuario en este grupo (excluyendo los con resultado oficial)
-    const guardados = matches.filter(m => userProns[m.id]).length;
-    const sinResultado = matches.filter(m => { const r = resultados[m.id]; return !(r && r.l !== '' && r.l !== undefined); }).length;
-    const estadoTexto = faseBloqueada
-      ? (faseGrupo.cerrada ? '🔒 Fase cerrada' : '🔒 Próximamente')
-      : guardados === 0 ? '🔓 Abierta'
-      : guardados >= sinResultado ? '✅ Completo'
-      : `${guardados}/${sinResultado} guardados`;
+    const dayDiv = document.createElement('div');
+    dayDiv.className = 'cal-day';
 
-    acc.innerHTML = `
-      <div class="grupo-hdr ${gi===0?'open':''}" onclick="toggleGrupo('${g}')">
-        <div class="grupo-title">
-          <div class="grupo-letter">${g}</div>
-          <div class="grupo-info">
-            <div class="grupo-name">Grupo ${g}</div>
-            <div class="grupo-teams">${teamsStr}</div>
-          </div>
-        </div>
-        <div class="grupo-meta">
-          <span class="grupo-pts-chip" id="gchip-${g}">0 pts</span>
-          <span style="font-size:10px;color:var(--muted);padding:4px 8px;background:rgba(0,200,83,.08);border-radius:6px">${estadoTexto}</span>
-          <span class="acc-arrow ${gi===0?'open':''}">▼</span>
-        </div>
-      </div>
-      <div class="grupo-body ${gi===0?'open':''}" id="gbody-${g}">
-        ${matches.map(m => buildMatchRow(m, faseBloqueada, resultados, userProns, faseGrupo.cerrada, bloqueados, now)).join('')}
-      </div>`;
-    container.appendChild(acc);
+    const hdr = document.createElement('div');
+    hdr.className = 'cal-day-hdr';
+    hdr.textContent = formatDateHeader(ymd);
+    dayDiv.appendChild(hdr);
+
+    const matchesDiv = document.createElement('div');
+    matchesDiv.className = 'cal-matches';
+    matchesDiv.innerHTML = matches.map(m => buildMatchRow(m, faseBloqueada, resultados, userProns, faseGrupo.cerrada, bloqueados, now)).join('');
+    dayDiv.appendChild(matchesDiv);
+
+    container.appendChild(dayDiv);
   });
 }
 
@@ -653,9 +631,29 @@ async function renderGrupos() {
 // bloqueado: fase ya guardada o cerrada
 // resultados: mapa de resultados oficiales — si el partido ya tiene resultado, los inputs se bloquean
 // faseCerrada: admin cerró fase; bloqueados: mapa {matchId: true/false/undefined}; now: Date.now()
+function kickoffToEcuadorTime(kickoffUtc) {
+  if (!kickoffUtc) return '';
+  return new Date(kickoffUtc).toLocaleTimeString('es-EC', { hour:'2-digit', minute:'2-digit', timeZone:'America/Guayaquil', hour12:false });
+}
+
+function kickoffToEcuadorDate(kickoffUtc) {
+  if (!kickoffUtc) return '0000-00-00';
+  return new Date(kickoffUtc).toLocaleDateString('en-CA', { timeZone:'America/Guayaquil' });
+}
+
+function formatDateHeader(ymd) {
+  const [y, mo, d] = ymd.split('-').map(Number);
+  const dt = new Date(y, mo - 1, d);
+  const dias  = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const nom = dias[dt.getDay()];
+  return `${nom.charAt(0).toUpperCase()+nom.slice(1)}, ${d} de ${meses[mo-1]}`;
+}
+
 function buildMatchRow(m, bloqueado, resultados, userProns, faseCerrada, bloqueados, now) {
   const fl = CVX.FLAGS[m.local] || '🏳️';
   const fv = CVX.FLAGS[m.visit] || '🏳️';
+  const horaEcu = kickoffToEcuadorTime(m.kickoff) || m.date;
   const isElim = m.phase !== 'grupo';
   const res = resultados && resultados[m.id];
   const tieneResultado = res && res.l !== '' && res.l !== undefined;
@@ -711,7 +709,7 @@ function buildMatchRow(m, bloqueado, resultados, userProns, faseCerrada, bloquea
       <span class="mname">${m.local}</span>
     </div>
     <div class="mcenter">
-      <div class="mdate">${m.date}</div>
+      <div class="mhora-row"><span class="mhora">${horaEcu}</span>${m.group ? `<span class="mgrupo-badge">Grupo ${m.group}</span>` : ''}</div>
       <div class="msede">${m.sede}</div>
       <div class="score-row-inp">
         <input class="sin" type="number" min="0" max="20" id="pl-${m.id}" placeholder="—" value="${pronL}"
@@ -822,7 +820,19 @@ async function saveMatch(matchId, fase) {
   }
 }
 
-function editMatch(matchId, fase) {
+async function editMatch(matchId, fase) {
+  const [fases, bloqueados] = await Promise.all([CVX.getFases(), CVX.getBloqueados()]);
+  const faseData = fases[fase] || {};
+  if (faseData.cerrada || !faseData.habilitada) { toast('🔒 Esta fase está cerrada'); return; }
+  const m = CVX.MATCHES.find(x => x.id === matchId);
+  if (m) {
+    const now = Date.now();
+    const kickoffMs = m.kickoff ? new Date(m.kickoff).getTime() : null;
+    const kickoffPasado = kickoffMs && now >= kickoffMs;
+    const manualOverride = bloqueados[matchId];
+    const bloqueado = manualOverride === true ? true : (manualOverride === false ? false : kickoffPasado);
+    if (bloqueado) { toast('🔒 Este partido ya está bloqueado, no se puede editar'); return; }
+  }
   const inpL = document.getElementById(`pl-${matchId}`);
   const inpV = document.getElementById(`pv-${matchId}`);
   if (inpL) { inpL.disabled = false; inpL.style.opacity = ''; inpL.style.cursor = ''; }

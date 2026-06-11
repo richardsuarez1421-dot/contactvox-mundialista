@@ -455,6 +455,9 @@ function buildAdminMatchRow(m, resultados, pronosticos, bloqueados) {
       </div>
     </div>` : '';
 
+  const resInputDisabled = bloqueadoAuto ? 'disabled title="Desbloquea el partido para editar el resultado"' : '';
+  const resInputStyle   = bloqueadoAuto ? ' style="opacity:.5;cursor:not-allowed"' : '';
+
   return `
   <div class="res-row" id="ar-${m.id}">
     <div class="rteam">
@@ -466,17 +469,19 @@ function buildAdminMatchRow(m, resultados, pronosticos, bloqueados) {
       <div class="score-inrow">
         <input class="rin ${setSt}" type="number" min="0" max="20" id="rl-${m.id}"
           placeholder="—" value="${res.l !== undefined ? res.l : ''}"
+          ${resInputDisabled}${resInputStyle}
           onchange="onResChange('${m.id}')" />
         <span class="rsep">:</span>
         <input class="rin ${setSt}" type="number" min="0" max="20" id="rv-${m.id}"
           placeholder="—" value="${res.v !== undefined ? res.v : ''}"
+          ${resInputDisabled}${resInputStyle}
           onchange="onResChange('${m.id}')" />
       </div>
       ${clasificaField}
       <div class="rimpact" id="imp-${m.id}">${pronCount} pronóstico${pronCount!==1?'s':''}</div>
       ${kickoffLabel ? `<div class="adm-kickoff-label">${kickoffLabel}</div>` : ''}
       ${lockBtnHtml}
-      ${setSt ? `<button class="clear-res-btn" onclick="clearResult('${m.id}')" title="Borrar resultado">🗑️ Limpiar</button>` : ''}
+      ${setSt && !bloqueadoAuto ? `<button class="clear-res-btn" onclick="clearResult('${m.id}')" title="Borrar resultado">🗑️ Limpiar</button>` : ''}
     </div>
     <div class="rteam rv">
       <span class="rflag">${fv}</span>
