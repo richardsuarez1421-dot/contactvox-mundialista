@@ -11,6 +11,22 @@
 
 const SPREADSHEET_ID = '19ml_9AHzIo4Eu3vARpPoBZMQHXOZdjtl7Tzgz9dUHm4';
 
+// ── Whitelist de participantes (validación server-side) ──────
+const ALLOWED_NAMES = [
+  'Alexander Conde','Bryan Cortez','Christian Freire','Daniel Tapia',
+  'David Chicaiza','Elizabeth Carrillo','Evelyn Achig','Fabian Olmedo',
+  'Fanny Mayorga','Henry Tito','Isak Gomez','Jair Delgado',
+  'Jhon Tanicuchi','Jhonny Andrade','Jimmy Pardo','Joan Martinez',
+  'Leyla Berrones','Luis Aguirre','Luis Bastidas','Luis Machado',
+  'Mario Vela','Mariela Garzon','Naymar Sanchez','Paul Cabrera',
+  'Richard Suárez','Thalia Ortega','Verónica Bermúdez',
+];
+const ALLOWED_SET = new Set(ALLOWED_NAMES.map(n => n.toLowerCase().trim()));
+
+function isAllowedUser(name) {
+  return ALLOWED_SET.has((name || '').toLowerCase().trim());
+}
+
 const HEADERS = {
   usuarios:    ['id', 'name', 'dept', 'createdAt'],
   pronosticos: ['userId', 'matchId', 'local', 'visita', 'fase', 'clasifica', 'savedAt'],
@@ -183,14 +199,18 @@ function getAllData() {
 
 function saveUsuario(p) {
   if (!p.id || !p.name) throw new Error('Missing id or name');
+  if (!isAllowedUser(p.name)) throw new Error('Usuario no autorizado');
+  const name = String(p.name).trim().substring(0, 60);
+  const dept = String(p.dept || 'General').trim().substring(0, 40);
+  const id   = String(p.id).trim().substring(0, 80);
   const sheet = getSheet('usuarios');
-  const row   = findRow('usuarios', 0, p.id);
+  const row   = findRow('usuarios', 0, id);
   if (row > 0) {
-    sheet.getRange(row, 2).setValue(p.name);
-    sheet.getRange(row, 3).setValue(p.dept || 'General');
+    sheet.getRange(row, 2).setValue(name);
+    sheet.getRange(row, 3).setValue(dept);
     return { ok: true, action: 'updated' };
   }
-  sheet.appendRow([p.id, p.name, p.dept || 'General', new Date().toISOString()]);
+  sheet.appendRow([id, name, dept, new Date().toISOString()]);
   return { ok: true, action: 'created' };
 }
 
@@ -198,18 +218,27 @@ function saveUsuario(p) {
 
 function savePronostico(p) {
   if (!p.userId || !p.matchId) throw new Error('Missing userId or matchId');
+  // Verificar que el usuario exista en la hoja de usuarios registrados
+  if (findRow('usuarios', 0, p.userId) < 0) throw new Error('Usuario no registrado');
+  // Sanitizar: solo aceptar valores numéricos cortos para scores
+  const local = String(p.local || '').trim().substring(0, 3).replace(/[^0-9]/g, '');
+  const visita = String(p.visita || '').trim().substring(0, 3).replace(/[^0-9]/g, '');
+  const matchId = String(p.matchId).trim().substring(0, 10);
+  const userId  = String(p.userId).trim().substring(0, 80);
+  const fase = String(p.fase || '').trim().substring(0, 20).replace(/[^a-z]/g, '');
+  const clasifica = String(p.clasifica || '').trim().replace(/[^a-z]/g, '');
   const sheet = getSheet('pronosticos');
-  const row   = findRow2('pronosticos', 0, p.userId, 1, p.matchId);
+  const row   = findRow2('pronosticos', 0, userId, 1, matchId);
   const now   = new Date().toString();
   if (row > 0) {
-    sheet.getRange(row, 3).setValue(p.local   || '');
-    sheet.getRange(row, 4).setValue(p.visita  || '');
-    sheet.getRange(row, 5).setValue(p.fase    || '');
-    sheet.getRange(row, 6).setValue(p.clasifica || '');
+    sheet.getRange(row, 3).setValue(local);
+    sheet.getRange(row, 4).setValue(visita);
+    sheet.getRange(row, 5).setValue(fase);
+    sheet.getRange(row, 6).setValue(clasifica);
     sheet.getRange(row, 7).setValue(now);
     return { ok: true, action: 'updated' };
   }
-  sheet.appendRow([p.userId, p.matchId, p.local || '', p.visita || '', p.fase || '', p.clasifica || '', now]);
+  sheet.appendRow([userId, matchId, local, visita, fase, clasifica, now]);
   return { ok: true, action: 'created' };
 }
 
@@ -217,17 +246,21 @@ function savePronostico(p) {
 
 function saveResultado(p) {
   if (!p.matchId) throw new Error('Missing matchId');
+  const matchId = String(p.matchId).trim().substring(0, 10);
+  const local = String(p.local || '').trim().substring(0, 3).replace(/[^0-9]/g, '');
+  const visita = String(p.visita || '').trim().substring(0, 3).replace(/[^0-9]/g, '');
+  const clasifica = String(p.clasifica || '').trim().replace(/[^a-z]/g, '');
   const sheet = getSheet('resultados');
-  const row   = findRow('resultados', 0, p.matchId);
+  const row   = findRow('resultados', 0, matchId);
   const now   = new Date().toString();
   if (row > 0) {
-    sheet.getRange(row, 2).setValue(p.local     || '');
-    sheet.getRange(row, 3).setValue(p.visita    || '');
-    sheet.getRange(row, 4).setValue(p.clasifica || '');
+    sheet.getRange(row, 2).setValue(local);
+    sheet.getRange(row, 3).setValue(visita);
+    sheet.getRange(row, 4).setValue(clasifica);
     sheet.getRange(row, 5).setValue(now);
     return { ok: true, action: 'updated' };
   }
-  sheet.appendRow([p.matchId, p.local || '', p.visita || '', p.clasifica || '', now]);
+  sheet.appendRow([matchId, local, visita, clasifica, now]);
   return { ok: true, action: 'created' };
 }
 

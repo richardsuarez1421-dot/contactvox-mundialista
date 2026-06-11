@@ -583,6 +583,8 @@ const CVX = (() => {
     const ms = MATCHES_GRUPOS.filter(m => m.group === groupLetter);
     const table = {};
     const ensure = t => { if (!table[t]) table[t] = { team: t, pts: 0, gf: 0, ga: 0, gd: 0, pj: 0 }; return table[t]; };
+    // Registrar todos los equipos del grupo aunque no tengan resultados aún
+    ms.forEach(m => { ensure(normTeam(m.local)); ensure(normTeam(m.visit)); });
     let jugados = 0;
     ms.forEach(m => {
       const r = (resultados || {})[m.id];
@@ -597,7 +599,7 @@ const CVX = (() => {
     Object.values(table).forEach(t => t.gd = t.gf - t.ga);
     const sorted = Object.values(table).sort((a, b) =>
       b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.team.localeCompare(b.team));
-    return { allPlayed: jugados === ms.length, sorted };
+    return { allPlayed: jugados === ms.length, jugados, sorted };
   }
 
   // Ganador de un partido eliminatorio ya con nombres resueltos.
@@ -621,26 +623,24 @@ const CVX = (() => {
     const out = {};
     const resolved = {}; // matchId -> { local, visit } (nombres reales o etiqueta original)
 
-    // 1) Posiciones por grupo
+    // 1) Posiciones por grupo — usa posiciones provisionales si hay al menos 1 resultado
     const standings = {};
-    const tercerosCompletos = [];
+    const terceros = [];
     GROUPS.forEach(g => {
       const st = groupStandings(g, resultados);
       standings[g] = st;
-      if (st.allPlayed && st.sorted[2]) {
-        tercerosCompletos.push({ group: g, ...st.sorted[2] });
+      if (st.jugados > 0 && st.sorted[2]) {
+        terceros.push({ group: g, ...st.sorted[2] });
       }
     });
-    // 8 mejores terceros (solo de grupos completos)
-    const mejoresTerceros = tercerosCompletos.sort((a, b) =>
+    const mejoresTerceros = terceros.sort((a, b) =>
       b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.team.localeCompare(b.team));
 
-    // Resuelve una etiqueta tipo "1° Grupo A" / "2° Grupo B" / "3° mejor 3"
     function resolveGroupLabel(label) {
       let mm = label.match(/^1° Grupo ([A-L])$/);
-      if (mm) { const st = standings[mm[1]]; return (st && st.allPlayed && st.sorted[0]) ? st.sorted[0].team : null; }
+      if (mm) { const st = standings[mm[1]]; return (st && st.jugados > 0 && st.sorted[0]) ? st.sorted[0].team : null; }
       mm = label.match(/^2° Grupo ([A-L])$/);
-      if (mm) { const st = standings[mm[1]]; return (st && st.allPlayed && st.sorted[1]) ? st.sorted[1].team : null; }
+      if (mm) { const st = standings[mm[1]]; return (st && st.jugados > 0 && st.sorted[1]) ? st.sorted[1].team : null; }
       mm = label.match(/^3° mejor (\d)$/);
       if (mm) { const idx = parseInt(mm[1]) - 1; return mejoresTerceros[idx] ? mejoresTerceros[idx].team : null; }
       return null;
