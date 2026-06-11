@@ -416,16 +416,19 @@ function buildAdminMatchRow(m, resultados, pronosticos, bloqueados) {
 
   let kickoffLabel = '';
   if (m.kickoff) {
-    const dt = new Date(m.kickoff);
-    const horaLocal = dt.toLocaleString('es-EC', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', timeZone:'America/Guayaquil' });
+    // Conversión manual UTC-5 para evitar dependencia del timezone del browser
+    const ecuMs = new Date(m.kickoff).getTime() - 5 * 3600000;
+    const de = new Date(ecuMs);
+    const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const horaEcu = `${de.getUTCDate()} ${MESES[de.getUTCMonth()]} ${String(de.getUTCHours()).padStart(2,'0')}:${String(de.getUTCMinutes()).padStart(2,'0')}`;
     if (kickoffPasado) {
-      kickoffLabel = `⏰ Kickoff: ${horaLocal} (iniciado)`;
+      kickoffLabel = `⏰ Kickoff: ${horaEcu} ECU (iniciado)`;
     } else if (msRestantes < 3600000) {
       const mins = Math.ceil(msRestantes / 60000);
-      kickoffLabel = `⏰ En ~${mins} min · ${horaLocal}`;
+      kickoffLabel = `⏰ En ~${mins} min · ${horaEcu} ECU`;
     } else {
       const hrs = Math.round(msRestantes / 3600000);
-      kickoffLabel = `⏰ En ~${hrs}h · ${horaLocal}`;
+      kickoffLabel = `⏰ En ~${hrs}h · ${horaEcu} ECU`;
     }
   }
 
