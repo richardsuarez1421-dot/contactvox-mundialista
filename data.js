@@ -268,6 +268,12 @@ const CVX = (() => {
     return await res.json();
   }
 
+  async function fbDelete(path) {
+    const res = await fetch(`${FB_URL}/${path}.json`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(`Firebase DELETE error: ${res.status}`);
+    return await res.json();
+  }
+
   // -- NORMALIZACION DE DATOS DE FIREBASE -------------------------
 
   function normalizeFirebaseData(raw) {
@@ -444,6 +450,18 @@ const CVX = (() => {
       return { ok: true };
     } catch (err) {
       console.error('saveResultado error:', err);
+      return null;
+    }
+  }
+
+  async function deleteResultado(matchId) {
+    if (!hasText(matchId)) return null;
+    try {
+      await fbDelete(`resultados/${matchId}`);
+      invalidateCache();
+      return { ok: true };
+    } catch (err) {
+      console.error('deleteResultado error:', err);
       return null;
     }
   }
@@ -732,7 +750,7 @@ const CVX = (() => {
     getUsuarios, getPronosticos, getResultados, getEspeciales,
     getFases, getFaseUsuario, buscarUsuario,
     getCurrentUser, setCurrentUser,
-    saveUsuario, savePronostico, saveResultado, saveEspecial, saveEquiposElim,
+    saveUsuario, savePronostico, saveResultado, deleteResultado, saveEspecial, saveEquiposElim,
     habilitarFase, cerrarFase,
     buildRanking, computeBracket, groupStandings,
     getCache, invalidateCache,

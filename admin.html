@@ -96,6 +96,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(6,12,7,.95);
 
 .save-res-btn{width:100%;margin-top:10px;background:var(--amber);color:#000;border:none;border-radius:8px;padding:9px;font-family:'Oswald';font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:transform .15s,box-shadow .15s}
 .save-res-btn:hover{transform:scale(1.02);box-shadow:0 4px 16px rgba(255,143,0,.3)}
+.clear-res-btn{margin-top:4px;background:rgba(255,59,48,.12);color:#ff6b6b;border:1px solid rgba(255,59,48,.25);border-radius:6px;padding:3px 10px;font-family:'Oswald';font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:background .2s}
+.clear-res-btn:hover{background:rgba(255,59,48,.25)}
 
 /* RANKING TABLE */
 .rk-hdr{display:grid;grid-template-columns:48px 1fr 60px 60px 60px 70px;gap:0;padding:8px 16px;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-weight:700;border-bottom:1px solid var(--border);margin-bottom:5px}
@@ -428,6 +430,7 @@ function buildAdminMatchRow(m, resultados, pronosticos) {
       </div>
       ${clasificaField}
       <div class="rimpact" id="imp-${m.id}">${pronCount} pronóstico${pronCount!==1?'s':''}</div>
+      ${setSt ? `<button class="clear-res-btn" onclick="clearResult('${m.id}')" title="Borrar resultado">🗑️ Limpiar</button>` : ''}
     </div>
     <div class="rteam rv">
       <span class="rflag">${fv}</span>
@@ -502,6 +505,24 @@ async function onResChange(matchId) {
 function _getAdmClasifica(matchId) {
   const checked = document.querySelector(`input[name="adm-cls-${matchId}"]:checked`);
   return checked ? checked.value : null;
+}
+
+async function clearResult(matchId) {
+  if (!confirm('¿Borrar el resultado de este partido? Los puntos serán removidos del ranking.')) return;
+  const r = await CVX.deleteResultado(matchId);
+  if (r && r.ok) {
+    const inpL = document.getElementById(`rl-${matchId}`);
+    const inpV = document.getElementById(`rv-${matchId}`);
+    if (inpL) { inpL.value = ''; inpL.classList.remove('set'); }
+    if (inpV) { inpV.value = ''; inpV.classList.remove('set'); }
+    const imp = document.getElementById(`imp-${matchId}`);
+    if (imp) imp.innerHTML = imp.innerHTML.replace(/<button[^>]*>.*?<\/button>/, '');
+    const btn = document.querySelector(`#ar-${matchId} .clear-res-btn`);
+    if (btn) btn.remove();
+    toast('🗑️ Resultado eliminado');
+  } else {
+    toast('⚠️ Error al eliminar el resultado');
+  }
 }
 
 async function saveGroupResults(g) {
