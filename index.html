@@ -561,6 +561,27 @@ async function doLogin() {
   confetti();
 }
 
+// ══ AUTO-RELOAD EN KICKOFF ══
+// Cuando un usuario tiene la página abierta, al llegar la hora exacta del partido
+// la página se recarga automáticamente para que el pronóstico quede bloqueado.
+let _kickoffReloadTimer = null;
+function scheduleKickoffReload() {
+  if (_kickoffReloadTimer) clearTimeout(_kickoffReloadTimer);
+  const now = Date.now();
+  const nextMs = CVX.MATCHES
+    .map(m => m.kickoff ? new Date(m.kickoff).getTime() : null)
+    .filter(t => t && t > now)
+    .sort((a, b) => a - b)[0];
+  if (!nextMs) return;
+  const msUntilKickoff = nextMs - now;
+  // Solo programar si el partido es dentro de las próximas 24h
+  if (msUntilKickoff > 24 * 3600 * 1000) return;
+  _kickoffReloadTimer = setTimeout(() => {
+    toast('⚽ ¡Partido iniciado! Bloqueando pronósticos...');
+    setTimeout(() => window.location.reload(), 2500);
+  }, msUntilKickoff + 1500);
+}
+
 // ══ INIT ══
 window.addEventListener('DOMContentLoaded', async () => {
   try {
@@ -600,6 +621,8 @@ window.addEventListener('DOMContentLoaded', async () => {
       if (el && el.dataset.loaded !== 'true') el.innerHTML = errHtml;
     });
   }
+
+  scheduleKickoffReload();
 
   // Refresh automático con jitter (25-40 s) para que los clientes no golpeen
   // el API simultáneamente. No invalida el caché a la fuerza — deja que el TTL
