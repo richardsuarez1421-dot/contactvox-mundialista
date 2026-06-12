@@ -383,7 +383,7 @@ const CVX = (() => {
     'rsuarez@contactvox.com':    'Richard Suarez',
     'tortega@contactvox.com':    'Thalia Ortega',
     'vbermudez@contactvox.com':  'Veronica Bermudez',
-    // Jhonny Andrade: confirmar correo con admin
+    'iandrade@contactvox.com':   'Jhonny Andrade',
     // Mariela Garzon: sin correo corporativo registrado
   };
 
