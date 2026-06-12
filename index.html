@@ -506,12 +506,13 @@ firebase.initializeApp({
   appId: "1:672223563840:web:f9aef718453463d5b34fa5"
 });
 
-// Restaura sesión cuando Firebase confirma que el usuario ya estaba logueado
+let _authReady = false; // true después del primer onAuthStateChanged
+
 firebase.auth().onAuthStateChanged(async (firebaseUser) => {
+  _authReady = true;
   if (firebaseUser) {
     const name = CVX.getNameFromEmail(firebaseUser.email);
     if (!name) {
-      // Cuenta no autorizada — cerrar sesión
       await firebase.auth().signOut();
       const errEl = document.getElementById('login-err');
       if (errEl) { errEl.textContent = 'Tu cuenta (' + firebaseUser.email + ') no está en la lista de participantes.'; errEl.style.display = 'block'; }
@@ -530,8 +531,9 @@ firebase.auth().onAuthStateChanged(async (firebaseUser) => {
       const wasAnon = !currentUser || norm(currentUser.name) !== norm(name);
       currentUser = user;
       CVX.setCurrentUser(currentUser);
+      // Siempre cerrar el modal cuando Firebase confirma la sesión
+      closeLogin();
       if (wasAnon && document.readyState !== 'loading') {
-        closeLogin();
         await renderGrupos();
         await renderElim();
         await updateUI();
@@ -541,7 +543,7 @@ firebase.auth().onAuthStateChanged(async (firebaseUser) => {
       }
     } catch (e) { console.warn('CVX auth state error', e); }
   } else {
-    // Usuario cerró sesión o token expiró
+    _authReady = true;
     if (currentUser) {
       currentUser = null;
       CVX.setCurrentUser(null);
@@ -564,8 +566,30 @@ document.getElementById('pop-close').addEventListener('click', () => {
 });
 
 // ══ LOGIN ══
-function openLogin() { document.getElementById('login-modal').classList.add('open'); }
+async function openLogin() {
+  // Si Firebase ya tiene sesión activa, no abrir el modal
+  if (!_authReady) {
+    // Esperar hasta que Firebase resuelva el estado (máx 3s)
+    await new Promise(r => { let t = setTimeout(r, 3000); const u = firebase.auth().onAuthStateChanged(() => { u(); clearTimeout(t); r(); }); });
+  }
+  if (firebase.auth().currentUser) return; // ya autenticado
+  const errEl = document.getElementById('login-err');
+  if (errEl) errEl.style.display = 'none';
+  document.getElementById('login-modal').classList.add('open');
+}
 function closeLogin() { document.getElementById('login-modal').classList.remove('open'); }
+
+async function cambiarUsuario() {
+  // Cerrar sesión de Google y mostrar modal para elegir otra cuenta
+  await firebase.auth().signOut();
+  currentUser = null;
+  CVX.setCurrentUser(null);
+  CVX.clearLocalUser();
+  await updateUI();
+  const errEl = document.getElementById('login-err');
+  if (errEl) errEl.style.display = 'none';
+  document.getElementById('login-modal').classList.add('open');
+}
 
 let _pendingAuth = null;
 
@@ -725,7 +749,7 @@ async function updateUI() {
         <div style="display:flex;align-items:center;gap:16px">
           ${pos ? `<span style="font-size:12px;color:var(--muted)">Pos. <strong style="color:#fff">#${pos}</strong></span>` : ''}
           <div class="pts-badge">${me ? me.pts : 0} pts</div>
-          <button class="btn-o" style="padding:6px 16px;font-size:11px" onclick="openLogin()">Cambiar usuario</button>
+          <button class="btn-o" style="padding:6px 16px;font-size:11px" onclick="cambiarUsuario()">Cambiar usuario</button>
         </div>
       </div>`;
     nav.textContent = currentUser.name.split(' ')[0] + ' ⚽';
