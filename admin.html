@@ -206,24 +206,13 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(6,12,7,.95);
   <div style="background:#0f2a18;border:1px solid #00c853;border-radius:20px;padding:40px 32px;max-width:380px;width:100%;text-align:center">
     <div style="font-size:32px;margin-bottom:8px">🔧</div>
     <h2 style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:#00c853;letter-spacing:2px;margin-bottom:4px">ADMIN · CVX 2026</h2>
-    <p style="font-size:13px;color:#666;margin-bottom:24px">Acceso restringido</p>
-    <div style="text-align:left;margin-bottom:14px">
-      <label style="font-size:11px;color:#888;letter-spacing:.5px;display:block;margin-bottom:6px">CORREO</label>
-      <input id="adm-email" type="email" placeholder="rsuarez@contactvox.com"
-        style="width:100%;background:#0a1a0e;border:1px solid #1e4d2b;border-radius:8px;padding:10px 14px;color:#fff;font-size:13px;box-sizing:border-box"
-        onkeydown="if(event.key==='Enter')admDoLogin()" />
-    </div>
-    <div style="text-align:left;margin-bottom:20px">
-      <label style="font-size:11px;color:#888;letter-spacing:.5px;display:block;margin-bottom:6px">CONTRASEÑA</label>
-      <input id="adm-pass" type="password" placeholder="••••••••"
-        style="width:100%;background:#0a1a0e;border:1px solid #1e4d2b;border-radius:8px;padding:10px 14px;color:#fff;font-size:13px;box-sizing:border-box"
-        onkeydown="if(event.key==='Enter')admDoLogin()" />
-    </div>
-    <div id="adm-login-err" style="color:#ff6b6b;font-size:12px;margin-bottom:12px;display:none"></div>
-    <button onclick="admDoLogin()"
-      style="width:100%;background:#00c853;color:#000;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.5px">
-      ENTRAR
+    <p style="font-size:13px;color:#6b9170;margin-bottom:28px">Acceso restringido · Solo rsuarez@contactvox.com</p>
+    <button id="adm-google-btn" onclick="admDoLogin()"
+      style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:#fff;color:#1a1a1a;border:none;border-radius:50px;padding:13px 20px;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .2s;letter-spacing:.3px;margin-bottom:12px">
+      <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+      Continuar con Google
     </button>
+    <div id="adm-login-err" style="color:#ff6b6b;font-size:12px;display:none;margin-top:4px"></div>
   </div>
 </div>
 
@@ -331,7 +320,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(6,12,7,.95);
 
 <div id="toast"></div>
 
-<script src="data.js?v=v7-user-alias"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="data.js?v=v8google"></script>
 <script>
 // ══ INIT ══
 async function initAdmin() {
@@ -341,10 +332,9 @@ async function initAdmin() {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
-  const ok = await admCheckAuth();
-  if (ok) await initAdmin();
+  // Auth handled by firebase.auth().onAuthStateChanged above
+  // initAdmin is called there once admin email is confirmed
 });
-
 async function refresh() {
   await Promise.all([renderFasesControl(), renderRanking(), renderParticipants(), updateSidebar()]);
 }
@@ -1031,23 +1021,43 @@ function toast(msg) {
 
 // ══ ADMIN AUTH ══
 const ADMIN_EMAIL = 'rsuarez@contactvox.com';
-const ADM_AUTH_KEY = 'cvx2026_adm_auth';
 
-function admGetAuth()  { try { return JSON.parse(sessionStorage.getItem(ADM_AUTH_KEY)) || null; } catch { return null; } }
-function admSetAuth(t) { try { sessionStorage.setItem(ADM_AUTH_KEY, JSON.stringify(t)); } catch {} }
-function admClearAuth(){ try { sessionStorage.removeItem(ADM_AUTH_KEY); } catch {} }
+// Firebase init (compartido con index.html)
+if (!firebase.apps.length) {
+  firebase.initializeApp({
+    apiKey: "AIzaSyBDvpVezIaEQ-RJCcPnSqC33Xapu872jRk",
+    authDomain: "mundialista-cvx.firebaseapp.com",
+    projectId: "mundialista-cvx",
+    appId: "1:672223563840:web:f9aef718453463d5b34fa5"
+  });
+}
+
+// Restaura sesión de admin en cada carga de página
+firebase.auth().onAuthStateChanged(async (user) => {
+  if (user && user.email.toLowerCase() === ADMIN_EMAIL) {
+    admHideLogin();
+    if (typeof initAdmin === 'function' && !window._adminInitialized) {
+      window._adminInitialized = true;
+      await initAdmin();
+    }
+  } else if (user) {
+    // Email no es admin
+    await firebase.auth().signOut();
+    const errEl = document.getElementById('adm-login-err');
+    if (errEl) { errEl.textContent = 'Acceso no autorizado para ' + user.email; errEl.style.display = 'block'; }
+  } else {
+    admShowLogin();
+  }
+});
 
 async function admCheckAuth() {
-  let auth = admGetAuth();
-  if (!auth) { admShowLogin(); return false; }
-  if (Date.now() >= auth.expiresAt) {
-    const refreshed = await CVX.fbAuthRefresh(auth.refreshToken);
-    if (!refreshed) { admClearAuth(); admShowLogin(); return false; }
-    auth = { ...auth, ...refreshed };
-    admSetAuth(auth);
+  const user = firebase.auth().currentUser;
+  if (user && user.email.toLowerCase() === ADMIN_EMAIL) {
+    admHideLogin();
+    return true;
   }
-  admHideLogin();
-  return true;
+  admShowLogin();
+  return false;
 }
 
 function admShowLogin() {
@@ -1063,30 +1073,32 @@ function admHideLogin() {
 }
 
 async function admDoLogin() {
-  const email = document.getElementById('adm-email').value.trim();
-  const pass  = document.getElementById('adm-pass').value;
+  const btn   = document.getElementById('adm-google-btn');
   const errEl = document.getElementById('adm-login-err');
   errEl.style.display = 'none';
-  if (!email || !pass) { errEl.textContent = 'Completa todos los campos'; errEl.style.display = 'block'; return; }
-  if (email.toLowerCase() !== ADMIN_EMAIL) { errEl.textContent = 'Acceso no autorizado'; errEl.style.display = 'block'; return; }
-  const r = await CVX.fbAuthSignIn(email, pass);
-  if (!r.ok) {
-    const msgs = { 'INVALID_PASSWORD':'Contraseña incorrecta', 'INVALID_LOGIN_CREDENTIALS':'Credenciales incorrectas', 'CONNECTION_ERROR':'Sin conexión' };
-    errEl.textContent = msgs[r.error] || r.error || 'Error';
-    errEl.style.display = 'block';
-    return;
+  btn.disabled = true; btn.style.opacity = '0.7';
+  try {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    const result = await firebase.auth().signInWithPopup(provider);
+    if (result.user.email.toLowerCase() !== ADMIN_EMAIL) {
+      await firebase.auth().signOut();
+      errEl.textContent = 'Acceso no autorizado para ' + result.user.email;
+      errEl.style.display = 'block';
+    }
+    // onAuthStateChanged se encarga del resto si el email es correcto
+  } catch (e) {
+    if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') {
+      errEl.textContent = 'Error al conectar con Google.';
+      errEl.style.display = 'block';
+    }
+  } finally {
+    btn.disabled = false; btn.style.opacity = '1';
   }
-  admSetAuth({ idToken: r.idToken, refreshToken: r.refreshToken, expiresAt: Date.now() + 3500000 });
-  admHideLogin();
-  document.getElementById('adm-pass').value = '';
-  await initAdmin();
 }
 
-function admLogout() {
-  admClearAuth();
-  admShowLogin();
-  document.getElementById('adm-email').value = '';
-  document.getElementById('adm-pass').value = '';
+async function admLogout() {
+  await firebase.auth().signOut();
+  window._adminInitialized = false;
 }
 
 </script>

@@ -347,72 +347,16 @@ footer .fg{color:var(--verde);font-weight:600}
 <!-- ══ LOGIN MODAL ══ -->
 <div id="login-modal">
   <div class="modal-box">
-    <!-- Paso 1: nombre + contraseña -->
-    <div id="lp-step1">
-      <h3>⚽ Copa Mundial CVX</h3>
-      <p id="lp-sub">Ingresa con tu nombre y contraseña</p>
-      <div class="field"><label>¿Quién eres?</label>
-        <select id="ln-name" onchange="onLoginNameChange()">
-          <option value="">— Selecciona tu nombre —</option>
-          <option>Alexander Conde</option>
-          <option>Bryan Cortez</option>
-          <option>Christian Freire</option>
-          <option>Daniel Tapia</option>
-          <option>David Chicaiza</option>
-          <option>Elizabeth Carrillo</option>
-          <option>Evelyn Achig</option>
-          <option>Fabian Olmedo</option>
-          <option>Fanny Mayorga</option>
-          <option>Henry Tito</option>
-          <option>Isak Gomez</option>
-          <option>Jair Delgado</option>
-          <option>Jhon Tanicuchi</option>
-          <option>Jhonny Andrade</option>
-          <option>Jimmy Pardo</option>
-          <option>Joan Martinez</option>
-          <option>Leyla Berrones</option>
-          <option>Luis Aguirre</option>
-          <option>Luis Bastidas</option>
-          <option>Luis Machado</option>
-          <option>Mario Vela</option>
-          <option>Mariela Garzon</option>
-          <option>Naymar Sanchez</option>
-          <option>Paul Cabrera</option>
-          <option>Richard Suárez</option>
-          <option>Thalia Ortega</option>
-          <option>Verónica Bermúdez</option>
-        </select>
-      </div>
-      <div class="field" id="lp-email-row" style="display:none">
-        <label>Tu correo (para recuperar contraseña)</label>
-        <input id="ln-email" type="email" placeholder="tu@correo.com" />
-      </div>
-      <div class="field">
-        <label>Contraseña</label>
-        <input id="ln-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
-      </div>
-      <div style="text-align:right;margin-bottom:14px">
-        <a href="#" onclick="doResetPassword();return false;" style="font-size:12px;color:var(--verde);text-decoration:none">¿Olvidaste tu contraseña?</a>
-      </div>
-      <div style="display:flex;gap:10px">
-        <button class="btn-o" style="flex:1;padding:11px" onclick="closeLogin()">Cancelar</button>
-        <button class="btn-p" style="flex:1;padding:11px" onclick="doLogin()">Entrar ⚽</button>
-      </div>
-    </div>
-    <!-- Paso 2: cambiar contraseña (primer ingreso) -->
-    <div id="lp-step2" style="display:none">
-      <h3 style="color:var(--verde)">🔑 Crea tu contraseña</h3>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Es tu primer ingreso. Elige una contraseña personal que usarás siempre.</p>
-      <div class="field">
-        <label>Nueva contraseña (mín. 8 caracteres)</label>
-        <input id="ln-newpass" type="password" placeholder="••••••••" />
-      </div>
-      <div class="field">
-        <label>Confirmar contraseña</label>
-        <input id="ln-newpass2" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doChangePassword()" />
-      </div>
-      <button class="btn-p" style="width:100%;padding:11px;margin-top:4px" onclick="doChangePassword()">Guardar y entrar ✅</button>
-    </div>
+    <h3>⚽ Copa Mundial CVX</h3>
+    <p>Ingresa con tu cuenta de Contactvox para guardar tus pronósticos</p>
+    <button id="google-signin-btn" onclick="doGoogleSignIn()"
+      style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:#fff;color:#1a1a1a;border:none;border-radius:50px;padding:13px 20px;font-size:14px;font-weight:700;cursor:pointer;transition:box-shadow .2s,opacity .2s;letter-spacing:.3px;margin-bottom:8px">
+      <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+      Continuar con Google
+    </button>
+    <div id="login-err" style="color:#ff6b6b;font-size:12px;margin-top:8px;display:none;text-align:center"></div>
+    <button class="btn-o" style="width:100%;padding:10px;margin-top:10px" onclick="closeLogin()">Cancelar</button>
+    <p style="font-size:11px;color:var(--muted);margin-top:16px;margin-bottom:0">Solo para participantes · Usa tu cuenta @contactvox.com</p>
   </div>
 </div>
 
@@ -549,8 +493,64 @@ footer .fg{color:var(--verde);font-weight:600}
 
 <div id="toast"></div>
 
-<script src="data.js?v=v6bracket"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="data.js?v=v8google"></script>
 <script>
+
+// ── FIREBASE INIT & GOOGLE AUTH ──
+firebase.initializeApp({
+  apiKey: "AIzaSyBDvpVezIaEQ-RJCcPnSqC33Xapu872jRk",
+  authDomain: "mundialista-cvx.firebaseapp.com",
+  projectId: "mundialista-cvx",
+  appId: "1:672223563840:web:f9aef718453463d5b34fa5"
+});
+
+// Restaura sesión cuando Firebase confirma que el usuario ya estaba logueado
+firebase.auth().onAuthStateChanged(async (firebaseUser) => {
+  if (firebaseUser) {
+    const name = CVX.getNameFromEmail(firebaseUser.email);
+    if (!name) {
+      // Cuenta no autorizada — cerrar sesión
+      await firebase.auth().signOut();
+      const errEl = document.getElementById('login-err');
+      if (errEl) { errEl.textContent = 'Tu cuenta (' + firebaseUser.email + ') no está en la lista de participantes.'; errEl.style.display = 'block'; }
+      return;
+    }
+    try {
+      const norm = n => n.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+      const usuarios = await CVX.getUsuarios();
+      let user = usuarios.find(u => norm(u.name) === norm(name));
+      if (!user) {
+        const id = 'u_' + norm(name).replace(/[^a-z0-9]/g, '_');
+        user = { id, name, dept: 'Contactvox', email: firebaseUser.email };
+        await CVX.saveUsuario(user);
+        CVX.invalidateCache();
+      }
+      const wasAnon = !currentUser || norm(currentUser.name) !== norm(name);
+      currentUser = user;
+      CVX.setCurrentUser(currentUser);
+      if (wasAnon && document.readyState !== 'loading') {
+        closeLogin();
+        await renderGrupos();
+        await renderElim();
+        await updateUI();
+        await loadEspeciales();
+        toast('¡Bienvenido/a ' + currentUser.name + '! ⚽');
+        confetti();
+      }
+    } catch (e) { console.warn('CVX auth state error', e); }
+  } else {
+    // Usuario cerró sesión o token expiró
+    if (currentUser) {
+      currentUser = null;
+      CVX.setCurrentUser(null);
+      CVX.clearLocalUser();
+      if (document.readyState !== 'loading') { try { await updateUI(); } catch {} }
+    }
+  }
+});
+
 // ══ STATE ══
 let currentUser = null;
 
@@ -569,112 +569,26 @@ function closeLogin() { document.getElementById('login-modal').classList.remove(
 
 let _pendingAuth = null;
 
-function onLoginNameChange() {
-  const name  = document.getElementById('ln-name').value;
-  const email = CVX.getUserEmail(name);
-  const row   = document.getElementById('lp-email-row');
-  const inp   = document.getElementById('ln-email');
-  if (email)     { row.style.display = 'none';  inp.value = email; }
-  else if (name) { row.style.display = 'block'; inp.value = ''; }
-  else           { row.style.display = 'none'; }
-}
-
-function _authError(code) {
-  const m = {
-    'EMAIL_NOT_FOUND':             'Nombre o contraseña incorrectos',
-    'INVALID_PASSWORD':            'Contraseña incorrecta',
-    'INVALID_LOGIN_CREDENTIALS':   'Nombre o contraseña incorrectos',
-    'USER_DISABLED':               'Cuenta deshabilitada',
-    'TOO_MANY_ATTEMPTS_TRY_LATER': 'Demasiados intentos, espera un momento',
-    'CONNECTION_ERROR':            'Sin conexión, verifica tu internet',
-  };
-  return m[code] || code || 'Error desconocido';
-}
-
-async function doLogin() {
-  const name   = document.getElementById('ln-name').value;
-  const pass   = document.getElementById('ln-pass').value;
-  if (!name) { toast('⚠️ Selecciona tu nombre'); return; }
-  if (!pass) { toast('⚠️ Ingresa tu contraseña'); return; }
-  const mapped = CVX.getUserEmail(name);
-  const manual = document.getElementById('ln-email')?.value?.trim();
-  const email  = mapped || manual;
-  if (!email) { toast('⚠️ Ingresa tu correo'); return; }
-
-  toast('⏳ Verificando...');
-  let result = await CVX.fbAuthSignIn(email, pass);
-
-  if (!result.ok) {
-    const noExiste = result.error?.includes('EMAIL_NOT_FOUND') ||
-                     result.error?.includes('INVALID_LOGIN_CREDENTIALS');
-    if (noExiste && pass === CVX.TEMP_PASSWORD) {
-      const su = await CVX.fbAuthSignUp(email, pass);
-      if (!su.ok) { toast('⚠️ ' + _authError(su.error)); return; }
-      result = su;
-    } else {
-      toast('⚠️ ' + _authError(result.error));
-      return;
+async function doGoogleSignIn() {
+  const btn = document.getElementById('google-signin-btn');
+  const err = document.getElementById('login-err');
+  err.style.display = 'none';
+  btn.disabled = true; btn.style.opacity = '0.7';
+  try {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({ hd: 'contactvox.com' });
+    await firebase.auth().signInWithPopup(provider);
+    // onAuthStateChanged handles the rest
+  } catch (e) {
+    if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') {
+      err.textContent = 'Error al conectar con Google. Intenta de nuevo.';
+      err.style.display = 'block';
     }
+  } finally {
+    btn.disabled = false; btn.style.opacity = '1';
   }
-
-  if (pass === CVX.TEMP_PASSWORD) {
-    _pendingAuth = { idToken: result.idToken, refreshToken: result.refreshToken, email, name };
-    document.getElementById('lp-step1').style.display = 'none';
-    document.getElementById('lp-step2').style.display = 'block';
-    document.getElementById('ln-newpass').focus();
-    return;
-  }
-
-  await _completeLogin(name, email, result.idToken, result.refreshToken);
 }
 
-async function doChangePassword() {
-  const p1 = document.getElementById('ln-newpass').value;
-  const p2 = document.getElementById('ln-newpass2').value;
-  if (!p1 || p1.length < 8)    { toast('⚠️ Mínimo 8 caracteres'); return; }
-  if (p1 !== p2)                { toast('⚠️ Las contraseñas no coinciden'); return; }
-  if (p1 === CVX.TEMP_PASSWORD) { toast('⚠️ No puedes usar la contraseña temporal'); return; }
-  toast('⏳ Guardando contraseña...');
-  const r = await CVX.fbAuthChangePass(_pendingAuth.idToken, p1);
-  if (!r.ok) { toast('⚠️ ' + _authError(r.error)); return; }
-  await _completeLogin(_pendingAuth.name, _pendingAuth.email, r.idToken, r.refreshToken);
-}
-
-async function doResetPassword() {
-  const name   = document.getElementById('ln-name').value;
-  const mapped = CVX.getUserEmail(name);
-  const manual = document.getElementById('ln-email')?.value?.trim();
-  const email  = mapped || manual;
-  if (!email) { toast('⚠️ Selecciona tu nombre primero'); return; }
-  toast('⏳ Enviando correo...');
-  const r = await CVX.fbAuthResetPassword(email);
-  if (r.ok) toast('✅ Correo enviado a ' + email + ' · Revisa tu bandeja');
-  else      toast('⚠️ ' + _authError(r.error));
-}
-
-async function _completeLogin(name, email, idToken, refreshToken) {
-  CVX.setAuthTokens({ idToken, refreshToken, expiresAt: Date.now() + 3500000 });
-  const norm = n => n.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-  const usuarios = await CVX.getUsuarios();
-  let user = usuarios.find(u => norm(u.name) === norm(name));
-  if (!user) {
-    const id = 'u_' + norm(name).replace(/[^a-z0-9]/g, '_');
-    user = { id, name, dept: 'Contactvox', email };
-    await CVX.saveUsuario(user);
-  }
-  currentUser = user;
-  CVX.setCurrentUser(currentUser);
-  document.getElementById('lp-step1').style.display = 'block';
-  document.getElementById('lp-step2').style.display = 'none';
-  document.getElementById('ln-pass').value = '';
-  closeLogin();
-  await renderGrupos();
-  await renderElim();
-  await updateUI();
-  await loadEspeciales();
-  toast('¡Bienvenido/a ' + currentUser.name + '! ⚽');
-  confetti();
-}
 
 
 // ══ AUTO-RELOAD EN KICKOFF ══
