@@ -384,7 +384,7 @@ const CVX = (() => {
     'tortega@contactvox.com':    'Thalia Ortega',
     'vbermudez@contactvox.com':  'Veronica Bermudez',
     'iandrade@contactvox.com':   'Jhonny Andrade',
-    // Mariela Garzon: sin correo corporativo registrado
+    'marydddn71@gmail.com':      'Mariela Garzon',
   };
 
   function getNameFromEmail(email) {
