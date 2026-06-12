@@ -600,7 +600,7 @@ async function doGoogleSignIn() {
   btn.disabled = true; btn.style.opacity = '0.7';
   try {
     const provider = new firebase.auth.GoogleAuthProvider();
-    provider.setCustomParameters({ hd: 'contactvox.com' });
+    provider.setCustomParameters({ prompt: 'select_account' });
     await firebase.auth().signInWithPopup(provider);
     // onAuthStateChanged handles the rest
   } catch (e) {
