@@ -201,6 +201,33 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(6,12,7,.95);
 </style>
 </head>
 <body>
+<!-- ══ ADMIN LOGIN ══ -->
+<div id="adm-login-overlay" style="display:none;position:fixed;inset:0;background:#0a1a0e;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#0f2a18;border:1px solid #00c853;border-radius:20px;padding:40px 32px;max-width:380px;width:100%;text-align:center">
+    <div style="font-size:32px;margin-bottom:8px">🔧</div>
+    <h2 style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:#00c853;letter-spacing:2px;margin-bottom:4px">ADMIN · CVX 2026</h2>
+    <p style="font-size:13px;color:#666;margin-bottom:24px">Acceso restringido</p>
+    <div style="text-align:left;margin-bottom:14px">
+      <label style="font-size:11px;color:#888;letter-spacing:.5px;display:block;margin-bottom:6px">CORREO</label>
+      <input id="adm-email" type="email" placeholder="rsuarez@contactvox.com"
+        style="width:100%;background:#0a1a0e;border:1px solid #1e4d2b;border-radius:8px;padding:10px 14px;color:#fff;font-size:13px;box-sizing:border-box"
+        onkeydown="if(event.key==='Enter')admDoLogin()" />
+    </div>
+    <div style="text-align:left;margin-bottom:20px">
+      <label style="font-size:11px;color:#888;letter-spacing:.5px;display:block;margin-bottom:6px">CONTRASEÑA</label>
+      <input id="adm-pass" type="password" placeholder="••••••••"
+        style="width:100%;background:#0a1a0e;border:1px solid #1e4d2b;border-radius:8px;padding:10px 14px;color:#fff;font-size:13px;box-sizing:border-box"
+        onkeydown="if(event.key==='Enter')admDoLogin()" />
+    </div>
+    <div id="adm-login-err" style="color:#ff6b6b;font-size:12px;margin-bottom:12px;display:none"></div>
+    <button onclick="admDoLogin()"
+      style="width:100%;background:#00c853;color:#000;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.5px">
+      ENTRAR
+    </button>
+  </div>
+</div>
+
+
 
 <!-- NAV -->
 <nav>
@@ -212,6 +239,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(6,12,7,.95);
     <a href="#participantes-panel">Participantes</a>
     <a href="index.html" target="_blank">Ver página pública ↗</a>
   </div>
+  <button id="adm-logout-btn" onclick="admLogout()" style="display:none;background:rgba(255,107,107,.15);border:1px solid rgba(255,107,107,.3);color:#ff6b6b;border-radius:7px;padding:5px 14px;font-size:11px;font-weight:700;cursor:pointer;margin-left:8px">Cerrar sesión</button>
 </nav>
 
 <!-- HEADER -->
@@ -306,10 +334,15 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(6,12,7,.95);
 <script src="data.js?v=v7-user-alias"></script>
 <script>
 // ══ INIT ══
-window.addEventListener('DOMContentLoaded', async () => {
+async function initAdmin() {
   await renderAdminGrupos();
   await renderAdminElim();
   await refresh();
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  const ok = await admCheckAuth();
+  if (ok) await initAdmin();
 });
 
 async function refresh() {
@@ -994,6 +1027,68 @@ function toast(msg) {
   t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3200);
 }
+
+
+// ══ ADMIN AUTH ══
+const ADMIN_EMAIL = 'rsuarez@contactvox.com';
+const ADM_AUTH_KEY = 'cvx2026_adm_auth';
+
+function admGetAuth()  { try { return JSON.parse(sessionStorage.getItem(ADM_AUTH_KEY)) || null; } catch { return null; } }
+function admSetAuth(t) { try { sessionStorage.setItem(ADM_AUTH_KEY, JSON.stringify(t)); } catch {} }
+function admClearAuth(){ try { sessionStorage.removeItem(ADM_AUTH_KEY); } catch {} }
+
+async function admCheckAuth() {
+  let auth = admGetAuth();
+  if (!auth) { admShowLogin(); return false; }
+  if (Date.now() >= auth.expiresAt) {
+    const refreshed = await CVX.fbAuthRefresh(auth.refreshToken);
+    if (!refreshed) { admClearAuth(); admShowLogin(); return false; }
+    auth = { ...auth, ...refreshed };
+    admSetAuth(auth);
+  }
+  admHideLogin();
+  return true;
+}
+
+function admShowLogin() {
+  document.getElementById('adm-login-overlay').style.display = 'flex';
+  document.getElementById('adm-logout-btn').style.display = 'none';
+  document.querySelectorAll('.adm-content-section').forEach(el => el.style.visibility = 'hidden');
+}
+
+function admHideLogin() {
+  document.getElementById('adm-login-overlay').style.display = 'none';
+  document.getElementById('adm-logout-btn').style.display = 'inline-block';
+  document.querySelectorAll('.adm-content-section').forEach(el => el.style.visibility = 'visible');
+}
+
+async function admDoLogin() {
+  const email = document.getElementById('adm-email').value.trim();
+  const pass  = document.getElementById('adm-pass').value;
+  const errEl = document.getElementById('adm-login-err');
+  errEl.style.display = 'none';
+  if (!email || !pass) { errEl.textContent = 'Completa todos los campos'; errEl.style.display = 'block'; return; }
+  if (email.toLowerCase() !== ADMIN_EMAIL) { errEl.textContent = 'Acceso no autorizado'; errEl.style.display = 'block'; return; }
+  const r = await CVX.fbAuthSignIn(email, pass);
+  if (!r.ok) {
+    const msgs = { 'INVALID_PASSWORD':'Contraseña incorrecta', 'INVALID_LOGIN_CREDENTIALS':'Credenciales incorrectas', 'CONNECTION_ERROR':'Sin conexión' };
+    errEl.textContent = msgs[r.error] || r.error || 'Error';
+    errEl.style.display = 'block';
+    return;
+  }
+  admSetAuth({ idToken: r.idToken, refreshToken: r.refreshToken, expiresAt: Date.now() + 3500000 });
+  admHideLogin();
+  document.getElementById('adm-pass').value = '';
+  await initAdmin();
+}
+
+function admLogout() {
+  admClearAuth();
+  admShowLogin();
+  document.getElementById('adm-email').value = '';
+  document.getElementById('adm-pass').value = '';
+}
+
 </script>
 </body>
 </html>

@@ -355,6 +355,96 @@ const CVX = (() => {
     return await res.json();
   }
 
+  // -- FIREBASE AUTH (REST) ---------------------------------------
+  // Web API Key: Firebase Console → Configuración del proyecto → General → Clave de API web
+  const FB_API_KEY = 'REPLACE_WITH_FIREBASE_WEB_API_KEY';
+  const FB_AUTH    = 'https://identitytoolkit.googleapis.com/v1/accounts';
+  const FB_TOKEN   = 'https://securetoken.googleapis.com/v1/token';
+
+  const TEMP_PASSWORD = 'Mundial2026!';
+
+  const _EMAIL_MAP = {
+    'alexander conde':    'aconde@contactvox.com',
+    'bryan cortez':       'bcortez@contactvox.com',
+    'christian freire':   'cfreire@contactvox.com',
+    'daniel tapia':       'dtapia@contactvox.com',
+    'david chicaiza':     null,
+    'elizabeth carrillo': 'ecarrillo@contactvox.com',
+    'evelyn achig':       'eachig@contactvox.com',
+    'fabian olmedo':      'folmedo@contactvox.com',
+    'fanny mayorga':      'fmayorga@contactvox.com',
+    'henry tito':         'htito@contactvox.com',
+    'isak gomez':         'igomez@contactvox.com',
+    'jair delgado':       'jdelgado@contactvox.com',
+    'jhon tanicuchi':     'jtanicuchi@contactvox.com',
+    'jhonny andrade':     null,
+    'jimmy pardo':        'jpardo@contactvox.com',
+    'joan martinez':      'jmartinez@contactvox.com',
+    'leyla berrones':     'lberrones@contactvox.com',
+    'luis aguirre':       'laguirre@contactvox.com',
+    'luis bastidas':      'lbastidas@contactvox.com',
+    'luis machado':       'lmachado@contactvox.com',
+    'mario vela':         'mvela@contactvox.com',
+    'mariela garzon':     null,
+    'naymar sanchez':     'nsanchez@contactvox.com',
+    'paul cabrera':       'pcabrera@contactvox.com',
+    'richard suarez':     'rsuarez@contactvox.com',
+    'thalia ortega':      'tortega@contactvox.com',
+    'veronica bermudez':  'vbermudez@contactvox.com',
+  };
+
+  function getUserEmail(name) {
+    if (!name) return null;
+    const key = name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+    return _EMAIL_MAP[key] ?? null;
+  }
+
+  function _authPost(endpoint, body) {
+    return fetch(`${FB_AUTH}:${endpoint}?key=${FB_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...body, returnSecureToken: true }),
+    })
+      .then(async r => {
+        const d = await r.json();
+        if (!r.ok) return { ok: false, error: d.error?.message || 'ERROR' };
+        return { ok: true, idToken: d.idToken, refreshToken: d.refreshToken, uid: d.localId };
+      })
+      .catch(() => ({ ok: false, error: 'CONNECTION_ERROR' }));
+  }
+
+  const fbAuthSignIn     = (email, pass) => _authPost('signInWithPassword', { email, password: pass });
+  const fbAuthSignUp     = (email, pass) => _authPost('signUp',             { email, password: pass });
+  const fbAuthChangePass = (idToken, pass) => _authPost('update',           { idToken, password: pass });
+
+  async function fbAuthResetPassword(email) {
+    try {
+      const r = await fetch(`${FB_AUTH}:sendOobCode?key=${FB_API_KEY}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestType: 'PASSWORD_RESET', email }),
+      });
+      const d = await r.json();
+      return r.ok ? { ok: true } : { ok: false, error: d.error?.message || 'ERROR' };
+    } catch { return { ok: false, error: 'CONNECTION_ERROR' }; }
+  }
+
+  async function fbAuthRefresh(refreshToken) {
+    try {
+      const r = await fetch(`${FB_TOKEN}?key=${FB_API_KEY}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(refreshToken)}`,
+      });
+      const d = await r.json();
+      if (!r.ok) return null;
+      return { idToken: d.id_token, refreshToken: d.refresh_token, expiresAt: Date.now() + 3500000 };
+    } catch { return null; }
+  }
+
+  const AUTH_LS = 'cvx2026_auth';
+  function getAuthTokens()  { try { return JSON.parse(localStorage.getItem(AUTH_LS)) || null; } catch { return null; } }
+  function setAuthTokens(t) { try { localStorage.setItem(AUTH_LS, JSON.stringify(t)); } catch {} }
+  function clearAuth()      { try { localStorage.removeItem(AUTH_LS); localStorage.removeItem('cvx2026_current_user'); } catch {} }
+
   // -- NORMALIZACION DE DATOS DE FIREBASE -------------------------
 
   function normalizeFirebaseData(raw) {
@@ -902,6 +992,10 @@ const CVX = (() => {
     buildRanking, computeBracket, groupStandings,
     getCache, invalidateCache,
     get cache() { return _cache; },
+    // Auth
+    TEMP_PASSWORD, getUserEmail,
+    fbAuthSignIn, fbAuthSignUp, fbAuthChangePass, fbAuthResetPassword, fbAuthRefresh,
+    getAuthTokens, setAuthTokens, clearAuth,
   };
 
 })();

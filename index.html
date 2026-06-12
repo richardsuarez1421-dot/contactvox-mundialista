@@ -344,46 +344,74 @@ footer .fg{color:var(--verde);font-weight:600}
   </div>
 </div>
 
-<!-- ══ REGISTRO INTELIGENTE MODAL ══ -->
+<!-- ══ LOGIN MODAL ══ -->
 <div id="login-modal">
   <div class="modal-box">
-    <h3>⚽ Ingresar al torneo</h3>
-    <p>Selecciona tu nombre para guardar tus pronósticos</p>
-    <div class="field"><label>¿Quién eres?</label>
-      <select id="ln-name">
-        <option value="">— Selecciona tu nombre —</option>
-        <option>Alexander Conde</option>
-        <option>Bryan Cortez</option>
-        <option>Christian Freire</option>
-        <option>Daniel Tapia</option>
-        <option>David Chicaiza</option>
-        <option>Elizabeth Carrillo</option>
-        <option>Evelyn Achig</option>
-        <option>Fabian Olmedo</option>
-        <option>Fanny Mayorga</option>
-        <option>Henry Tito</option>
-        <option>Isak Gomez</option>
-        <option>Jair Delgado</option>
-        <option>Jhon Tanicuchi</option>
-        <option>Jhonny Andrade</option>
-        <option>Jimmy Pardo</option>
-        <option>Joan Martinez</option>
-        <option>Leyla Berrones</option>
-        <option>Luis Aguirre</option>
-        <option>Luis Bastidas</option>
-        <option>Luis Machado</option>
-        <option>Mario Vela</option>
-        <option>Mariela Garzon</option>
-        <option>Naymar Sanchez</option>
-        <option>Paul Cabrera</option>
-        <option>Richard Suárez</option>
-        <option>Thalia Ortega</option>
-        <option>Verónica Bermúdez</option>
-      </select>
+    <!-- Paso 1: nombre + contraseña -->
+    <div id="lp-step1">
+      <h3>⚽ Copa Mundial CVX</h3>
+      <p id="lp-sub">Ingresa con tu nombre y contraseña</p>
+      <div class="field"><label>¿Quién eres?</label>
+        <select id="ln-name" onchange="onLoginNameChange()">
+          <option value="">— Selecciona tu nombre —</option>
+          <option>Alexander Conde</option>
+          <option>Bryan Cortez</option>
+          <option>Christian Freire</option>
+          <option>Daniel Tapia</option>
+          <option>David Chicaiza</option>
+          <option>Elizabeth Carrillo</option>
+          <option>Evelyn Achig</option>
+          <option>Fabian Olmedo</option>
+          <option>Fanny Mayorga</option>
+          <option>Henry Tito</option>
+          <option>Isak Gomez</option>
+          <option>Jair Delgado</option>
+          <option>Jhon Tanicuchi</option>
+          <option>Jhonny Andrade</option>
+          <option>Jimmy Pardo</option>
+          <option>Joan Martinez</option>
+          <option>Leyla Berrones</option>
+          <option>Luis Aguirre</option>
+          <option>Luis Bastidas</option>
+          <option>Luis Machado</option>
+          <option>Mario Vela</option>
+          <option>Mariela Garzon</option>
+          <option>Naymar Sanchez</option>
+          <option>Paul Cabrera</option>
+          <option>Richard Suárez</option>
+          <option>Thalia Ortega</option>
+          <option>Verónica Bermúdez</option>
+        </select>
+      </div>
+      <div class="field" id="lp-email-row" style="display:none">
+        <label>Tu correo (para recuperar contraseña)</label>
+        <input id="ln-email" type="email" placeholder="tu@correo.com" />
+      </div>
+      <div class="field">
+        <label>Contraseña</label>
+        <input id="ln-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
+      </div>
+      <div style="text-align:right;margin-bottom:14px">
+        <a href="#" onclick="doResetPassword();return false;" style="font-size:12px;color:var(--verde);text-decoration:none">¿Olvidaste tu contraseña?</a>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn-o" style="flex:1;padding:11px" onclick="closeLogin()">Cancelar</button>
+        <button class="btn-p" style="flex:1;padding:11px" onclick="doLogin()">Entrar ⚽</button>
+      </div>
     </div>
-    <div style="display:flex;gap:10px;margin-top:6px">
-      <button class="btn-o" style="flex:1;padding:11px" onclick="closeLogin()">Cancelar</button>
-      <button class="btn-p" style="flex:1;padding:11px" onclick="doLogin()">Entrar ⚽</button>
+    <!-- Paso 2: cambiar contraseña (primer ingreso) -->
+    <div id="lp-step2" style="display:none">
+      <h3 style="color:var(--verde)">🔑 Crea tu contraseña</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Es tu primer ingreso. Elige una contraseña personal que usarás siempre.</p>
+      <div class="field">
+        <label>Nueva contraseña (mín. 8 caracteres)</label>
+        <input id="ln-newpass" type="password" placeholder="••••••••" />
+      </div>
+      <div class="field">
+        <label>Confirmar contraseña</label>
+        <input id="ln-newpass2" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doChangePassword()" />
+      </div>
+      <button class="btn-p" style="width:100%;padding:11px;margin-top:4px" onclick="doChangePassword()">Guardar y entrar ✅</button>
     </div>
   </div>
 </div>
@@ -538,28 +566,116 @@ document.getElementById('pop-close').addEventListener('click', () => {
 // ══ LOGIN ══
 function openLogin() { document.getElementById('login-modal').classList.add('open'); }
 function closeLogin() { document.getElementById('login-modal').classList.remove('open'); }
+
+let _pendingAuth = null;
+
+function onLoginNameChange() {
+  const name  = document.getElementById('ln-name').value;
+  const email = CVX.getUserEmail(name);
+  const row   = document.getElementById('lp-email-row');
+  const inp   = document.getElementById('ln-email');
+  if (email)     { row.style.display = 'none';  inp.value = email; }
+  else if (name) { row.style.display = 'block'; inp.value = ''; }
+  else           { row.style.display = 'none'; }
+}
+
+function _authError(code) {
+  const m = {
+    'EMAIL_NOT_FOUND':             'Nombre o contraseña incorrectos',
+    'INVALID_PASSWORD':            'Contraseña incorrecta',
+    'INVALID_LOGIN_CREDENTIALS':   'Nombre o contraseña incorrectos',
+    'USER_DISABLED':               'Cuenta deshabilitada',
+    'TOO_MANY_ATTEMPTS_TRY_LATER': 'Demasiados intentos, espera un momento',
+    'CONNECTION_ERROR':            'Sin conexión, verifica tu internet',
+  };
+  return m[code] || code || 'Error desconocido';
+}
+
 async function doLogin() {
-  const name = document.getElementById('ln-name').value;
+  const name   = document.getElementById('ln-name').value;
+  const pass   = document.getElementById('ln-pass').value;
   if (!name) { toast('⚠️ Selecciona tu nombre'); return; }
-  const id = 'u_' + name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '_');
-  toast('⏳ Conectando...');
-  const usuarios = await CVX.getUsuarios();
-  const existing = usuarios.find(u => u.name.toLowerCase() === name.toLowerCase());
-  if (existing) {
-    currentUser = existing;
-  } else {
-    currentUser = { id, name, dept: 'Contactvox' };
-    await CVX.saveUsuario(currentUser);
+  if (!pass) { toast('⚠️ Ingresa tu contraseña'); return; }
+  const mapped = CVX.getUserEmail(name);
+  const manual = document.getElementById('ln-email')?.value?.trim();
+  const email  = mapped || manual;
+  if (!email) { toast('⚠️ Ingresa tu correo'); return; }
+
+  toast('⏳ Verificando...');
+  let result = await CVX.fbAuthSignIn(email, pass);
+
+  if (!result.ok) {
+    const noExiste = result.error?.includes('EMAIL_NOT_FOUND') ||
+                     result.error?.includes('INVALID_LOGIN_CREDENTIALS');
+    if (noExiste && pass === CVX.TEMP_PASSWORD) {
+      const su = await CVX.fbAuthSignUp(email, pass);
+      if (!su.ok) { toast('⚠️ ' + _authError(su.error)); return; }
+      result = su;
+    } else {
+      toast('⚠️ ' + _authError(result.error));
+      return;
+    }
   }
+
+  if (pass === CVX.TEMP_PASSWORD) {
+    _pendingAuth = { idToken: result.idToken, refreshToken: result.refreshToken, email, name };
+    document.getElementById('lp-step1').style.display = 'none';
+    document.getElementById('lp-step2').style.display = 'block';
+    document.getElementById('ln-newpass').focus();
+    return;
+  }
+
+  await _completeLogin(name, email, result.idToken, result.refreshToken);
+}
+
+async function doChangePassword() {
+  const p1 = document.getElementById('ln-newpass').value;
+  const p2 = document.getElementById('ln-newpass2').value;
+  if (!p1 || p1.length < 8)    { toast('⚠️ Mínimo 8 caracteres'); return; }
+  if (p1 !== p2)                { toast('⚠️ Las contraseñas no coinciden'); return; }
+  if (p1 === CVX.TEMP_PASSWORD) { toast('⚠️ No puedes usar la contraseña temporal'); return; }
+  toast('⏳ Guardando contraseña...');
+  const r = await CVX.fbAuthChangePass(_pendingAuth.idToken, p1);
+  if (!r.ok) { toast('⚠️ ' + _authError(r.error)); return; }
+  await _completeLogin(_pendingAuth.name, _pendingAuth.email, r.idToken, r.refreshToken);
+}
+
+async function doResetPassword() {
+  const name   = document.getElementById('ln-name').value;
+  const mapped = CVX.getUserEmail(name);
+  const manual = document.getElementById('ln-email')?.value?.trim();
+  const email  = mapped || manual;
+  if (!email) { toast('⚠️ Selecciona tu nombre primero'); return; }
+  toast('⏳ Enviando correo...');
+  const r = await CVX.fbAuthResetPassword(email);
+  if (r.ok) toast('✅ Correo enviado a ' + email + ' · Revisa tu bandeja');
+  else      toast('⚠️ ' + _authError(r.error));
+}
+
+async function _completeLogin(name, email, idToken, refreshToken) {
+  CVX.setAuthTokens({ idToken, refreshToken, expiresAt: Date.now() + 3500000 });
+  const norm = n => n.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const usuarios = await CVX.getUsuarios();
+  let user = usuarios.find(u => norm(u.name) === norm(name));
+  if (!user) {
+    const id = 'u_' + norm(name).replace(/[^a-z0-9]/g, '_');
+    user = { id, name, dept: 'Contactvox', email };
+    await CVX.saveUsuario(user);
+  }
+  currentUser = user;
   CVX.setCurrentUser(currentUser);
+  document.getElementById('lp-step1').style.display = 'block';
+  document.getElementById('lp-step2').style.display = 'none';
+  document.getElementById('ln-pass').value = '';
   closeLogin();
   await renderGrupos();
   await renderElim();
   await updateUI();
   await loadEspeciales();
-  toast(`¡Bienvenido/a ${currentUser.name}! ⚽`);
+  toast('¡Bienvenido/a ' + currentUser.name + '! ⚽');
   confetti();
 }
+
 
 // ══ AUTO-RELOAD EN KICKOFF ══
 // Cuando un usuario tiene la página abierta, al llegar la hora exacta del partido
