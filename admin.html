@@ -395,7 +395,7 @@ async function renderAdminGrupos() {
       <div class="adm-cal-matches">
         ${matches.map(m => buildAdminMatchRow(m, resultados, pronosticos, bloqueados)).join('')}
       </div>
-      <button class="save-res-btn" onclick="saveDayResults(${idsJson})">💾 Guardar resultados de este día y recalcular ranking</button>`;
+      <button class="save-res-btn" data-ids='${idsJson}' onclick="saveDayResults(JSON.parse(this.dataset.ids))">💾 Guardar resultados de este día y recalcular ranking</button>`;
     container.appendChild(dayDiv);
   });
 }
@@ -487,8 +487,9 @@ function buildAdminMatchRow(m, resultados, pronosticos, bloqueados) {
       </div>
     </div>` : '';
 
-  const resInputDisabled = bloqueadoAuto ? 'disabled title="Desbloquea el partido para editar el resultado"' : '';
-  const resInputStyle   = bloqueadoAuto ? ' style="opacity:.5;cursor:not-allowed"' : '';
+  // Admin siempre puede ingresar resultados — el bloqueo solo aplica a pronósticos de usuarios
+  const resInputDisabled = '';
+  const resInputStyle   = '';
 
   return `
   <div class="res-row" id="ar-${m.id}">
@@ -513,7 +514,7 @@ function buildAdminMatchRow(m, resultados, pronosticos, bloqueados) {
       <div class="rimpact" id="imp-${m.id}">${pronCount} pronóstico${pronCount!==1?'s':''}</div>
       ${kickoffLabel ? `<div class="adm-kickoff-label">${kickoffLabel}</div>` : ''}
       ${lockBtnHtml}
-      ${setSt && !bloqueadoAuto ? `<button class="clear-res-btn" onclick="clearResult('${m.id}')" title="Borrar resultado">🗑️ Limpiar</button>` : ''}
+      ${setSt ? `<button class="clear-res-btn" onclick="clearResult('${m.id}')" title="Borrar resultado">🗑️ Limpiar</button>` : ''}
     </div>
     <div class="rteam rv">
       <span class="rflag">${fv}</span>
