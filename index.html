@@ -685,6 +685,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  // Garantizar token antes de cualquier llamada REST (evita race con onIdTokenChanged)
+  try { CVX.setRestToken(await fbUser.getIdToken()); } catch(e) {}
+
   try {
     const savedUser = CVX.getCurrentUser();
     if (savedUser) { currentUser = savedUser; }
