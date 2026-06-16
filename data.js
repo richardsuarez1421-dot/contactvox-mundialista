@@ -323,6 +323,16 @@ const CVX = (() => {
   function clearRestToken()  { _restToken = null; }
   function _q() { return _restToken ? `?auth=${_restToken}` : ''; }
 
+  // Registra uid→userId en /usuariosPorUID (cada usuario solo escribe su propio)
+  async function fbRegisterUID(uid, userId) {
+    const res = await fetch(`${FB_URL}/usuariosPorUID/${uid}.json${_q()}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userId),
+    });
+    // Silencioso — no lanzar error si falla (puede que ya exista)
+  }
+
   async function fbGet(path) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 15000);
@@ -951,7 +961,7 @@ const CVX = (() => {
     get cache() { return _cache; },
     // Auth (Google Sign-In via Firebase SDK en HTML)
     getNameFromEmail, clearLocalUser,
-    setRestToken, clearRestToken,
+    setRestToken, clearRestToken, fbRegisterUID,
   };
 
 })();

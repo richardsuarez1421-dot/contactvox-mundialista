@@ -543,6 +543,8 @@ firebase.auth().onAuthStateChanged(async (firebaseUser) => {
       currentUser = user;
       CVX.setCurrentUser(currentUser);
       closeLogin();
+      // Auto-registrar UID → userId en /usuariosPorUID (reglas permiten al propio usuario)
+      try { await CVX.fbRegisterUID(firebaseUser.uid, user.id); } catch {}
       if (document.readyState !== 'loading') {
         if (wasAnon) {
           // Primer ingreso o cambio de usuario — re-render completo
@@ -659,11 +661,33 @@ function scheduleKickoffReload() {
 
 // ══ INIT ══
 window.addEventListener('DOMContentLoaded', async () => {
+  setupReveal();
+  showSkeletonLoader();
+
+  // Esperar a que Firebase Auth resuelva el estado antes de cargar datos
+  // (las reglas de Firebase requieren auth != null para leer)
+  const fbUser = await new Promise(resolve => {
+    const unsub = firebase.auth().onAuthStateChanged(u => { unsub(); resolve(u); });
+  });
+
+  if (!fbUser) {
+    // Sin sesión → mostrar pantalla de login en lugar del error de conexión
+    document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
+    const containers = ['grupos-container', 'elim-container'];
+    containers.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = `<div style="text-align:center;padding:48px 20px;color:var(--muted)">
+        <div style="font-size:40px;margin-bottom:12px">⚽</div>
+        <div style="font-size:15px;margin-bottom:20px">Inicia sesión para ver y guardar tus pronósticos</div>
+        <button class="btn-p" style="padding:12px 28px" onclick="openLogin()">Continuar con Google</button>
+      </div>`;
+    });
+    return;
+  }
+
   try {
     const savedUser = CVX.getCurrentUser();
     if (savedUser) { currentUser = savedUser; }
-    setupReveal();
-    showSkeletonLoader();
 
     await Promise.race([
       (async () => {
