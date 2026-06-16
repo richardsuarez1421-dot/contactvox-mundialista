@@ -506,11 +506,13 @@ firebase.initializeApp({
   appId: "1:672223563840:web:f9aef718453463d5b34fa5"
 });
 
-let _authReady = false; // true después del primer onAuthStateChanged
+let _authReady = false;       // true después del primer onAuthStateChanged
+let _fbSessionActive = false; // true cuando Firebase confirma sesión activa
 
 firebase.auth().onAuthStateChanged(async (firebaseUser) => {
   _authReady = true;
   if (firebaseUser) {
+    _fbSessionActive = true;
     const name = CVX.getNameFromEmail(firebaseUser.email);
     if (!name) {
       await firebase.auth().signOut();
@@ -531,25 +533,35 @@ firebase.auth().onAuthStateChanged(async (firebaseUser) => {
       const wasAnon = !currentUser || norm(currentUser.name) !== norm(name);
       currentUser = user;
       CVX.setCurrentUser(currentUser);
-      // Siempre cerrar el modal cuando Firebase confirma la sesión
       closeLogin();
-      if (wasAnon && document.readyState !== 'loading') {
-        await renderGrupos();
-        await renderElim();
-        await updateUI();
-        await loadEspeciales();
-        toast('¡Bienvenido/a ' + currentUser.name + '! ⚽');
-        confetti();
+      if (document.readyState !== 'loading') {
+        if (wasAnon) {
+          // Primer ingreso o cambio de usuario — re-render completo
+          await renderGrupos();
+          await renderElim();
+          await updateUI();
+          await loadEspeciales();
+          toast('¡Bienvenido/a ' + currentUser.name + '! ⚽');
+          confetti();
+        } else {
+          // Mismo usuario restaurado desde sesión — solo refrescar chips
+          await refreshAllChips();
+        }
       }
     } catch (e) { console.warn('CVX auth state error', e); }
   } else {
-    _authReady = true;
-    if (currentUser) {
+    // Firebase no tiene sesión activa
+    if (_fbSessionActive) {
+      // El usuario cerró sesión explícitamente (Cambiar usuario)
+      _fbSessionActive = false;
       currentUser = null;
       CVX.setCurrentUser(null);
       CVX.clearLocalUser();
       if (document.readyState !== 'loading') { try { await updateUI(); } catch {} }
     }
+    // Si _fbSessionActive era false: primera carga sin sesión Google.
+    // Conservar currentUser de localStorage para que puedan VER sus pronósticos.
+    // saveMatch() pedirá autenticación antes de guardar.
   }
 });
 
@@ -948,7 +960,11 @@ function _getClasifica(matchId) {
 }
 
 async function saveMatch(matchId, fase) {
-  if (!currentUser) { toast('⚠️ Inicia sesión primero'); openLogin(); return; }
+  if (!currentUser || !firebase.auth().currentUser) {
+    // Sin sesión de Google → pedir autenticación
+    await openLogin();
+    return;
+  }
 
   // Re-validate lock server-side — never trust UI state alone
   const [fasesChk, bloqueadosChk] = await Promise.all([CVX.getFases(), CVX.getBloqueados()]);
