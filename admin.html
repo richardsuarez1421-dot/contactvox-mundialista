@@ -1103,6 +1103,15 @@ if (!firebase.apps.length) {
   });
 }
 
+// Token REST siempre fresco
+firebase.auth().onIdTokenChanged(async (user) => {
+  if (user) {
+    try { CVX.setRestToken(await user.getIdToken()); } catch {}
+  } else {
+    CVX.clearRestToken();
+  }
+});
+
 // Restaura sesión de admin en cada carga de página
 firebase.auth().onAuthStateChanged(async (user) => {
   if (user && user.email.toLowerCase() === ADMIN_EMAIL) {

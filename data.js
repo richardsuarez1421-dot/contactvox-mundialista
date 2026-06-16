@@ -317,11 +317,17 @@ const CVX = (() => {
 
   // -- FIREBASE REST API ------------------------------------------
 
+  // Token Firebase Auth para llamadas REST (se actualiza desde HTML)
+  let _restToken = null;
+  function setRestToken(t) { _restToken = t; }
+  function clearRestToken()  { _restToken = null; }
+  function _q() { return _restToken ? `?auth=${_restToken}` : ''; }
+
   async function fbGet(path) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 15000);
     try {
-      const res = await fetch(`${FB_URL}/${path}.json`, { signal: ctrl.signal });
+      const res = await fetch(`${FB_URL}/${path}.json${_q()}`, { signal: ctrl.signal });
       if (!res.ok) throw new Error(`Firebase GET error: ${res.status}`);
       return await res.json();
     } finally {
@@ -330,7 +336,7 @@ const CVX = (() => {
   }
 
   async function fbSet(path, data) {
-    const res = await fetch(`${FB_URL}/${path}.json`, {
+    const res = await fetch(`${FB_URL}/${path}.json${_q()}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -340,7 +346,7 @@ const CVX = (() => {
   }
 
   async function fbUpdate(path, data) {
-    const res = await fetch(`${FB_URL}/${path}.json`, {
+    const res = await fetch(`${FB_URL}/${path}.json${_q()}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -350,7 +356,7 @@ const CVX = (() => {
   }
 
   async function fbDelete(path) {
-    const res = await fetch(`${FB_URL}/${path}.json`, { method: 'DELETE' });
+    const res = await fetch(`${FB_URL}/${path}.json${_q()}`, { method: 'DELETE' });
     if (!res.ok) throw new Error(`Firebase DELETE error: ${res.status}`);
     return await res.json();
   }
@@ -945,6 +951,7 @@ const CVX = (() => {
     get cache() { return _cache; },
     // Auth (Google Sign-In via Firebase SDK en HTML)
     getNameFromEmail, clearLocalUser,
+    setRestToken, clearRestToken,
   };
 
 })();

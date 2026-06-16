@@ -506,6 +506,15 @@ firebase.initializeApp({
   appId: "1:672223563840:web:f9aef718453463d5b34fa5"
 });
 
+// Mantiene el token REST siempre fresco (se renueva automáticamente ~1h)
+firebase.auth().onIdTokenChanged(async (user) => {
+  if (user) {
+    try { CVX.setRestToken(await user.getIdToken()); } catch {}
+  } else {
+    CVX.clearRestToken();
+  }
+});
+
 let _authReady = false;       // true después del primer onAuthStateChanged
 let _fbSessionActive = false; // true cuando Firebase confirma sesión activa
 
