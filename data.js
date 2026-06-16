@@ -337,7 +337,8 @@ const CVX = (() => {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 15000);
     try {
-      const res = await fetch(`${FB_URL}/${path}.json${_q()}`, { signal: ctrl.signal });
+      // Lecturas públicas: no requieren token (Firebase rules: .read: true en raíz)
+      const res = await fetch(`${FB_URL}/${path}.json`, { signal: ctrl.signal });
       if (!res.ok) throw new Error(`Firebase GET error: ${res.status}`);
       return await res.json();
     } finally {
