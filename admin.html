@@ -508,9 +508,10 @@ async function saveDayResults(matchIds) {
   if (!saves.length) { toast('⚠️ No hay resultados completos para guardar'); return; }
   toast('⏳ Guardando...');
   await Promise.all(saves);
-  await CVX.recalcRanking();
+  CVX.invalidateCache();
   toast(`✅ ${saves.length} resultado${saves.length!==1?'s':''} guardado${saves.length!==1?'s':''} · ranking actualizado`);
   await updateSidebar();
+  await renderRanking();
   await renderAdminGrupos();
 }
 
