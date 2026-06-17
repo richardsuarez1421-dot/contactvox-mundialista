@@ -495,6 +495,12 @@ async function renderAdminGrupos() {
 }
 
 async function saveDayResults(matchIds) {
+  // Garantizar token fresco antes de escribir
+  try {
+    const u = firebase.auth().currentUser;
+    if (u) CVX.setRestToken(await u.getIdToken(true));
+  } catch(e) {}
+
   const saves = [];
   matchIds.forEach(id => {
     const l = document.getElementById(`rl-${id}`)?.value;
@@ -507,9 +513,11 @@ async function saveDayResults(matchIds) {
   });
   if (!saves.length) { toast('⚠️ No hay resultados completos para guardar'); return; }
   toast('⏳ Guardando...');
-  await Promise.all(saves);
+  const results = await Promise.all(saves);
+  const ok = results.filter(r => r && r.ok).length;
+  if (!ok) { toast('❌ Error al guardar — intenta de nuevo'); return; }
   CVX.invalidateCache();
-  toast(`✅ ${saves.length} resultado${saves.length!==1?'s':''} guardado${saves.length!==1?'s':''} · ranking actualizado`);
+  toast(`✅ ${ok} resultado${ok!==1?'s':''} guardado${ok!==1?'s':''} · ranking actualizado`);
   await updateSidebar();
   await renderRanking();
   await renderAdminGrupos();
@@ -831,6 +839,12 @@ async function togglePhaseUnlock(phaseId) {
 }
 
 async function saveElimResults(phaseId) {
+  // Garantizar token fresco antes de escribir
+  try {
+    const u = firebase.auth().currentUser;
+    if (u) CVX.setRestToken(await u.getIdToken(true));
+  } catch(e) {}
+
   const matches = CVX.MATCHES_ELIM.filter(m => m.phase === phaseId);
   const saves = [];
   matches.forEach(m => {
@@ -846,17 +860,20 @@ async function saveElimResults(phaseId) {
     saves.push(CVX.saveResultado(m.id, l, v, clasifica || undefined));
   });
   toast('⏳ Guardando...');
-  await Promise.all(saves);
+  const results = await Promise.all(saves);
+  const ok = results.filter(r => r && r.ok).length;
+  if (!ok && saves.length) { toast('❌ Error al guardar — intenta de nuevo'); return; }
   const ph = CVX.PHASES.find(p => p.id === phaseId);
   const sec = document.getElementById(`adm-fase-${phaseId}`);
   if (sec) {
     const sub = sec.querySelector('.elim-phase-sub');
-    if (sub) sub.textContent = `${saves.length}/${matches.length} resultados`;
+    if (sub) sub.textContent = `${ok}/${matches.length} resultados`;
   }
+  CVX.invalidateCache();
   // Avanzar ganadores a la siguiente fase del cuadro
   await recalcBracket(true);
-  toast(`✅ ${saves.length} resultados de ${ph ? ph.label : phaseId} guardados · Ranking y cuadro actualizados`);
-  logActivity(`${ph ? ph.label : phaseId}: ${saves.length} resultados cargados`);
+  toast(`✅ ${ok} resultados de ${ph ? ph.label : phaseId} guardados · Ranking y cuadro actualizados`);
+  logActivity(`${ph ? ph.label : phaseId}: ${ok} resultados cargados`);
   await refresh();
   await renderAdminElim();
 }
