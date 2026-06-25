@@ -4,31 +4,35 @@
 // Conectado a Firebase Realtime Database via REST API.
 // El diseno de index.html y admin.html no cambia en absoluto.
 //
-// SISTEMA DE PUNTOS v5:
+// SISTEMA DE PUNTOS v6:
 // -- FASE DE GRUPOS -----------------------------------------------
 //   Marcador exacto                                        -> 5 pts
 //   Ganador o empate correcto                              -> 2 pts
 //   Ningun acierto                                         -> 0 pts
 //
-// -- OCTAVOS ------------------------------------------------------
+// -- 16AVOS DE FINAL ----------------------------------------------
 //   Marcador exacto + clasificado correcto                 -> 6 pts
 //   Solo clasificado correcto                              -> 3 pts
 //
-// -- CUARTOS ------------------------------------------------------
+// -- OCTAVOS DE FINAL ---------------------------------------------
+//   Marcador exacto + clasificado correcto                 -> 7 pts
+//   Solo clasificado correcto                              -> 3 pts
+//
+// -- CUARTOS DE FINAL ---------------------------------------------
 //   Marcador exacto + clasificado correcto                 -> 8 pts
 //   Solo clasificado correcto                              -> 4 pts
 //
 // -- SEMIFINALES --------------------------------------------------
-//   Marcador exacto + clasificado correcto                 -> 10 pts
-//   Solo clasificado correcto                              -> 5 pts
+//   Marcador exacto + clasificado correcto                 -> 9 pts
+//   Solo clasificado correcto                              -> 4 pts
 //
 // -- TERCER PUESTO ------------------------------------------------
 //   Marcador exacto + clasificado correcto                 -> 8 pts
 //   Solo clasificado correcto                              -> 4 pts
 //
 // -- GRAN FINAL ---------------------------------------------------
-//   Marcador exacto + clasificado correcto                 -> 15 pts
-//   Solo clasificado correcto (campeon)                    -> 8 pts
+//   Marcador exacto + clasificado correcto                 -> 12 pts
+//   Solo clasificado correcto (campeon)                    -> 6 pts
 //
 // -- PREDICCIONES ESPECIALES --------------------------------------
 //   Campeon del mundo -> 10 pts  |  Subcampeon      -> 6 pts
@@ -79,12 +83,13 @@ const CVX = (() => {
 
   // -- TABLA DE PUNTOS POR FASE -----------------------------------
   const PUNTOS = {
-    grupo:   { exacto: 5, ganador: 2, fallo: 0 },
-    octavos: { exacto: 6, clasificado: 3, fallo: 0 },
-    cuartos: { exacto: 8, clasificado: 4, fallo: 0 },
-    semis:   { exacto: 10, clasificado: 5, fallo: 0 },
-    tercero: { exacto: 8,  clasificado: 4, fallo: 0 },
-    final:   { exacto: 15, clasificado: 8, fallo: 0 },
+    grupo:      { exacto: 5,  ganador: 2,    fallo: 0 },
+    dieciseis:  { exacto: 6,  clasificado: 3, fallo: 0 },
+    octavos:    { exacto: 7,  clasificado: 3, fallo: 0 },
+    cuartos:    { exacto: 8,  clasificado: 4, fallo: 0 },
+    semis:      { exacto: 9,  clasificado: 4, fallo: 0 },
+    tercero:    { exacto: 8,  clasificado: 4, fallo: 0 },
+    final:      { exacto: 12, clasificado: 6, fallo: 0 },
   };
 
   // -- SEMANAS DEL TORNEO -----------------------------------------
@@ -183,48 +188,50 @@ const CVX = (() => {
 
   // -- PARTIDOS ELIMINATORIOS -------------------------------------
   const MATCHES_ELIM = [
-    { id:'R1',  phase:'octavos', group:null, local:'1° Grupo A', visit:'2° Grupo B', date:'Dom 28 Jun', sede:'Por confirmar', kickoff:'2026-06-28T20:00:00Z' },
-    { id:'R2',  phase:'octavos', group:null, local:'1° Grupo C', visit:'2° Grupo D', date:'Dom 28 Jun', sede:'Por confirmar', kickoff:'2026-06-28T23:00:00Z' },
-    { id:'R3',  phase:'octavos', group:null, local:'1° Grupo E', visit:'2° Grupo F', date:'Lun 29 Jun', sede:'Por confirmar', kickoff:'2026-06-29T20:00:00Z' },
-    { id:'R4',  phase:'octavos', group:null, local:'1° Grupo G', visit:'2° Grupo H', date:'Lun 29 Jun', sede:'Por confirmar', kickoff:'2026-06-29T23:00:00Z' },
-    { id:'R5',  phase:'octavos', group:null, local:'1° Grupo I', visit:'2° Grupo J', date:'Mar 30 Jun', sede:'Por confirmar', kickoff:'2026-06-30T20:00:00Z' },
-    { id:'R6',  phase:'octavos', group:null, local:'1° Grupo K', visit:'2° Grupo L', date:'Mar 30 Jun', sede:'Por confirmar', kickoff:'2026-06-30T23:00:00Z' },
-    { id:'R7',  phase:'octavos', group:null, local:'1° Grupo B', visit:'2° Grupo A', date:'Mié 1 Jul',  sede:'Por confirmar', kickoff:'2026-07-01T20:00:00Z' },
-    { id:'R8',  phase:'octavos', group:null, local:'1° Grupo D', visit:'2° Grupo C', date:'Mié 1 Jul',  sede:'Por confirmar', kickoff:'2026-07-01T23:00:00Z' },
-    { id:'R9',  phase:'octavos', group:null, local:'1° Grupo F', visit:'2° Grupo E', date:'Jue 2 Jul',  sede:'Por confirmar', kickoff:'2026-07-02T20:00:00Z' },
-    { id:'R10', phase:'octavos', group:null, local:'1° Grupo H', visit:'2° Grupo G', date:'Jue 2 Jul',  sede:'Por confirmar', kickoff:'2026-07-02T23:00:00Z' },
-    { id:'R11', phase:'octavos', group:null, local:'1° Grupo J', visit:'2° Grupo I', date:'Vie 3 Jul',  sede:'Por confirmar', kickoff:'2026-07-03T20:00:00Z' },
-    { id:'R12', phase:'octavos', group:null, local:'1° Grupo L', visit:'2° Grupo K', date:'Vie 3 Jul',  sede:'Por confirmar', kickoff:'2026-07-03T23:00:00Z' },
-    { id:'R13', phase:'octavos', group:null, local:'3° mejor 1', visit:'3° mejor 2', date:'Sáb 4 Jul',  sede:'Por confirmar', kickoff:'2026-07-04T20:00:00Z' },
-    { id:'R14', phase:'octavos', group:null, local:'3° mejor 3', visit:'3° mejor 4', date:'Sáb 4 Jul',  sede:'Por confirmar', kickoff:'2026-07-04T23:00:00Z' },
-    { id:'R15', phase:'octavos', group:null, local:'3° mejor 5', visit:'3° mejor 6', date:'Dom 5 Jul',  sede:'Por confirmar', kickoff:'2026-07-05T20:00:00Z' },
-    { id:'R16', phase:'octavos', group:null, local:'3° mejor 7', visit:'3° mejor 8', date:'Dom 5 Jul',  sede:'Por confirmar', kickoff:'2026-07-05T23:00:00Z' },
-    { id:'QF1', phase:'cuartos', group:null, local:'Gan. R1',  visit:'Gan. R2',  date:'Mar 7 Jul',  sede:'Por confirmar', kickoff:'2026-07-07T20:00:00Z' },
-    { id:'QF2', phase:'cuartos', group:null, local:'Gan. R3',  visit:'Gan. R4',  date:'Mar 7 Jul',  sede:'Por confirmar', kickoff:'2026-07-07T23:00:00Z' },
-    { id:'QF3', phase:'cuartos', group:null, local:'Gan. R5',  visit:'Gan. R6',  date:'Mié 8 Jul',  sede:'Por confirmar', kickoff:'2026-07-08T20:00:00Z' },
-    { id:'QF4', phase:'cuartos', group:null, local:'Gan. R7',  visit:'Gan. R8',  date:'Mié 8 Jul',  sede:'Por confirmar', kickoff:'2026-07-08T23:00:00Z' },
-    { id:'QF5', phase:'cuartos', group:null, local:'Gan. R9',  visit:'Gan. R10', date:'Jue 9 Jul',  sede:'Por confirmar', kickoff:'2026-07-09T20:00:00Z' },
-    { id:'QF6', phase:'cuartos', group:null, local:'Gan. R11', visit:'Gan. R12', date:'Jue 9 Jul',  sede:'Por confirmar', kickoff:'2026-07-09T23:00:00Z' },
-    { id:'QF7', phase:'cuartos', group:null, local:'Gan. R13', visit:'Gan. R14', date:'Vie 10 Jul', sede:'Por confirmar', kickoff:'2026-07-10T20:00:00Z' },
-    { id:'QF8', phase:'cuartos', group:null, local:'Gan. R15', visit:'Gan. R16', date:'Vie 10 Jul', sede:'Por confirmar', kickoff:'2026-07-10T23:00:00Z' },
-    { id:'SF1', phase:'semis',   group:null, local:'Gan. QF1', visit:'Gan. QF2', date:'Lun 14 Jul', sede:'Por confirmar', kickoff:'2026-07-14T20:00:00Z' },
-    { id:'SF2', phase:'semis',   group:null, local:'Gan. QF3', visit:'Gan. QF4', date:'Lun 14 Jul', sede:'Por confirmar', kickoff:'2026-07-14T23:00:00Z' },
-    { id:'SF3', phase:'semis',   group:null, local:'Gan. QF5', visit:'Gan. QF6', date:'Mar 15 Jul', sede:'Por confirmar', kickoff:'2026-07-15T20:00:00Z' },
-    { id:'SF4', phase:'semis',   group:null, local:'Gan. QF7', visit:'Gan. QF8', date:'Mar 15 Jul', sede:'Por confirmar', kickoff:'2026-07-15T23:00:00Z' },
-    { id:'3P1', phase:'tercero', group:null, local:'Per. SF1', visit:'Per. SF2', date:'Sáb 18 Jul', sede:'Por confirmar', kickoff:'2026-07-18T20:00:00Z' },
-    { id:'3P2', phase:'tercero', group:null, local:'Per. SF3', visit:'Per. SF4', date:'Sáb 18 Jul', sede:'Por confirmar', kickoff:'2026-07-18T23:00:00Z' },
-    { id:'FIN', phase:'final',   group:null, local:'Gan. SF1/SF2', visit:'Gan. SF3/SF4', date:'Dom 19 Jul', sede:'MetLife Stadium, NJ', kickoff:'2026-07-19T22:00:00Z' },
+    { id:'R1',  phase:'dieciseis', group:null, local:'1° Grupo A', visit:'2° Grupo B', date:'Dom 28 Jun', sede:'Por confirmar', kickoff:'2026-06-28T20:00:00Z' },
+    { id:'R2',  phase:'dieciseis', group:null, local:'1° Grupo C', visit:'2° Grupo D', date:'Dom 28 Jun', sede:'Por confirmar', kickoff:'2026-06-28T23:00:00Z' },
+    { id:'R3',  phase:'dieciseis', group:null, local:'1° Grupo E', visit:'2° Grupo F', date:'Lun 29 Jun', sede:'Por confirmar', kickoff:'2026-06-29T20:00:00Z' },
+    { id:'R4',  phase:'dieciseis', group:null, local:'1° Grupo G', visit:'2° Grupo H', date:'Lun 29 Jun', sede:'Por confirmar', kickoff:'2026-06-29T23:00:00Z' },
+    { id:'R5',  phase:'dieciseis', group:null, local:'1° Grupo I', visit:'2° Grupo J', date:'Mar 30 Jun', sede:'Por confirmar', kickoff:'2026-06-30T20:00:00Z' },
+    { id:'R6',  phase:'dieciseis', group:null, local:'1° Grupo K', visit:'2° Grupo L', date:'Mar 30 Jun', sede:'Por confirmar', kickoff:'2026-06-30T23:00:00Z' },
+    { id:'R7',  phase:'dieciseis', group:null, local:'1° Grupo B', visit:'2° Grupo A', date:'Mié 1 Jul',  sede:'Por confirmar', kickoff:'2026-07-01T20:00:00Z' },
+    { id:'R8',  phase:'dieciseis', group:null, local:'1° Grupo D', visit:'2° Grupo C', date:'Mié 1 Jul',  sede:'Por confirmar', kickoff:'2026-07-01T23:00:00Z' },
+    { id:'R9',  phase:'dieciseis', group:null, local:'1° Grupo F', visit:'2° Grupo E', date:'Jue 2 Jul',  sede:'Por confirmar', kickoff:'2026-07-02T20:00:00Z' },
+    { id:'R10', phase:'dieciseis', group:null, local:'1° Grupo H', visit:'2° Grupo G', date:'Jue 2 Jul',  sede:'Por confirmar', kickoff:'2026-07-02T23:00:00Z' },
+    { id:'R11', phase:'dieciseis', group:null, local:'1° Grupo J', visit:'2° Grupo I', date:'Vie 3 Jul',  sede:'Por confirmar', kickoff:'2026-07-03T20:00:00Z' },
+    { id:'R12', phase:'dieciseis', group:null, local:'1° Grupo L', visit:'2° Grupo K', date:'Vie 3 Jul',  sede:'Por confirmar', kickoff:'2026-07-03T23:00:00Z' },
+    { id:'R13', phase:'dieciseis', group:null, local:'3° mejor 1', visit:'3° mejor 2', date:'Sáb 4 Jul',  sede:'Por confirmar', kickoff:'2026-07-04T20:00:00Z' },
+    { id:'R14', phase:'dieciseis', group:null, local:'3° mejor 3', visit:'3° mejor 4', date:'Sáb 4 Jul',  sede:'Por confirmar', kickoff:'2026-07-04T23:00:00Z' },
+    { id:'R15', phase:'dieciseis', group:null, local:'3° mejor 5', visit:'3° mejor 6', date:'Dom 5 Jul',  sede:'Por confirmar', kickoff:'2026-07-05T20:00:00Z' },
+    { id:'R16', phase:'dieciseis', group:null, local:'3° mejor 7', visit:'3° mejor 8', date:'Dom 5 Jul',  sede:'Por confirmar', kickoff:'2026-07-05T23:00:00Z' },
+    { id:'QF1', phase:'octavos',  group:null, local:'Gan. R1',  visit:'Gan. R2',  date:'Mar 7 Jul',  sede:'Por confirmar', kickoff:'2026-07-07T20:00:00Z' },
+    { id:'QF2', phase:'octavos',  group:null, local:'Gan. R3',  visit:'Gan. R4',  date:'Mar 7 Jul',  sede:'Por confirmar', kickoff:'2026-07-07T23:00:00Z' },
+    { id:'QF3', phase:'octavos',  group:null, local:'Gan. R5',  visit:'Gan. R6',  date:'Mié 8 Jul',  sede:'Por confirmar', kickoff:'2026-07-08T20:00:00Z' },
+    { id:'QF4', phase:'octavos',  group:null, local:'Gan. R7',  visit:'Gan. R8',  date:'Mié 8 Jul',  sede:'Por confirmar', kickoff:'2026-07-08T23:00:00Z' },
+    { id:'QF5', phase:'octavos',  group:null, local:'Gan. R9',  visit:'Gan. R10', date:'Jue 9 Jul',  sede:'Por confirmar', kickoff:'2026-07-09T20:00:00Z' },
+    { id:'QF6', phase:'octavos',  group:null, local:'Gan. R11', visit:'Gan. R12', date:'Jue 9 Jul',  sede:'Por confirmar', kickoff:'2026-07-09T23:00:00Z' },
+    { id:'QF7', phase:'octavos',  group:null, local:'Gan. R13', visit:'Gan. R14', date:'Vie 10 Jul', sede:'Por confirmar', kickoff:'2026-07-10T20:00:00Z' },
+    { id:'QF8', phase:'octavos',  group:null, local:'Gan. R15', visit:'Gan. R16', date:'Vie 10 Jul', sede:'Por confirmar', kickoff:'2026-07-10T23:00:00Z' },
+    { id:'SF1', phase:'cuartos',  group:null, local:'Gan. QF1', visit:'Gan. QF2', date:'Sáb 11 Jul', sede:'Por confirmar', kickoff:'2026-07-11T20:00:00Z' },
+    { id:'SF2', phase:'cuartos',  group:null, local:'Gan. QF3', visit:'Gan. QF4', date:'Sáb 11 Jul', sede:'Por confirmar', kickoff:'2026-07-11T23:00:00Z' },
+    { id:'SF3', phase:'cuartos',  group:null, local:'Gan. QF5', visit:'Gan. QF6', date:'Dom 12 Jul', sede:'Por confirmar', kickoff:'2026-07-12T20:00:00Z' },
+    { id:'SF4', phase:'cuartos',  group:null, local:'Gan. QF7', visit:'Gan. QF8', date:'Dom 12 Jul', sede:'Por confirmar', kickoff:'2026-07-12T23:00:00Z' },
+    { id:'NF1', phase:'semis',    group:null, local:'Gan. SF1', visit:'Gan. SF2', date:'Mié 15 Jul', sede:'Por confirmar', kickoff:'2026-07-15T20:00:00Z' },
+    { id:'NF2', phase:'semis',    group:null, local:'Gan. SF3', visit:'Gan. SF4', date:'Jue 16 Jul', sede:'Por confirmar', kickoff:'2026-07-16T20:00:00Z' },
+    { id:'3P1', phase:'tercero',  group:null, local:'Per. NF1', visit:'Per. NF2', date:'Dom 19 Jul', sede:'Por confirmar', kickoff:'2026-07-19T19:00:00Z' },
+    { id:'FIN', phase:'final',    group:null, local:'Gan. NF1', visit:'Gan. NF2', date:'Dom 19 Jul', sede:'MetLife Stadium, NJ', kickoff:'2026-07-19T22:00:00Z' },
   ];
 
   const MATCHES = [...MATCHES_GRUPOS, ...MATCHES_ELIM];
   const GROUPS  = ['A','B','C','D','E','F','G','H','I','J','K','L'];
   const PHASES  = [
-    { id:'grupo',   label:'Fase de Grupos',   icon:'⚽', unlocked: true  },
-    { id:'octavos', label:'Octavos de Final', icon:'🔟', unlocked: false },
-    { id:'cuartos', label:'Cuartos de Final', icon:'🏅', unlocked: false },
-    { id:'semis',   label:'Semifinales',       icon:'🌟', unlocked: false },
-    { id:'tercero', label:'Tercer Puesto',    icon:'🥉', unlocked: false },
-    { id:'final',   label:'Gran Final',       icon:'🏆', unlocked: false },
+    { id:'grupo',      label:'Fase de Grupos',   icon:'⚽', unlocked: true  },
+    { id:'dieciseis',  label:'16avos de Final',  icon:'🔟', unlocked: false },
+    { id:'octavos',    label:'Octavos de Final', icon:'⚡', unlocked: false },
+    { id:'cuartos',    label:'Cuartos de Final', icon:'🏅', unlocked: false },
+    { id:'semis',      label:'Semifinales',      icon:'🌟', unlocked: false },
+    { id:'tercero',    label:'Tercer Puesto',    icon:'🥉', unlocked: false },
+    { id:'final',      label:'Gran Final',       icon:'🏆', unlocked: false },
   ];
 
   // -- FLAGS ------------------------------------------------------
@@ -930,7 +937,7 @@ const CVX = (() => {
       return null;
     }
 
-    const phaseOrder = ['octavos', 'cuartos', 'semis', 'tercero', 'final'];
+    const phaseOrder = ['dieciseis', 'octavos', 'cuartos', 'semis', 'tercero', 'final'];
     phaseOrder.forEach(phase => {
       MATCHES_ELIM.filter(m => m.phase === phase).forEach(m => {
         const localReal = resolveGroupLabel(m.local) || resolveElimRef(m.local);
