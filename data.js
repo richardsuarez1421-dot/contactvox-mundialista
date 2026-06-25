@@ -711,7 +711,7 @@ const CVX = (() => {
 
   // -- LOGICA DE PUNTOS -------------------------------------------
 
-  function calcPoints(pron, res, phase) {
+  function calcPoints(pron, res, phase, matchId) {
     if (!res || res.l === '' || res.l === null || res.l === undefined)
       return { pts: 0, label: 'pendiente', detalle: 'Partido no jugado todavía' };
     if (!pron || pron.l === '' || pron.l === null || pron.l === undefined)
@@ -722,14 +722,20 @@ const CVX = (() => {
     const P  = PUNTOS[phase] || PUNTOS.grupo;
 
     if (phase === 'grupo') {
-      if (pl === rl && pv === rv)
-        return { pts: P.exacto, label: 'exacto',
-          detalle: `⚡ Marcador exacto ${rl}-${rv} → +${P.exacto} pts` };
       const pronWin = pl > pv ? 'L' : pl < pv ? 'V' : 'E';
       const realWin = rl > rv ? 'L' : rl < rv ? 'V' : 'E';
-      if (pronWin === realWin)
-        return { pts: P.ganador, label: 'ganador',
-          detalle: `✓ Ganador correcto (${rl}-${rv}) → +${P.ganador} pts` };
+      // Bono x2: partido E6 Ecuador vs Alemania — si apostaste Ecuador (local) gana y ganó
+      const bonusEcu = matchId === 'E6' && pronWin === 'L' && realWin === 'L';
+      if (pl === rl && pv === rv) {
+        const pts = P.exacto * (bonusEcu ? 2 : 1);
+        return { pts, label: 'exacto',
+          detalle: `⚡ Marcador exacto ${rl}-${rv}${bonusEcu ? ' 🇪🇨 Bono x2' : ''} → +${pts} pts` };
+      }
+      if (pronWin === realWin) {
+        const pts = P.ganador * (bonusEcu ? 2 : 1);
+        return { pts, label: 'ganador',
+          detalle: `✓ Ganador correcto (${rl}-${rv})${bonusEcu ? ' 🇪🇨 Bono x2' : ''} → +${pts} pts` };
+      }
       return { pts: 0, label: 'fallo',
         detalle: `✗ Incorrecto (salió ${rl}-${rv}) → 0 pts` };
     }
@@ -790,7 +796,7 @@ const CVX = (() => {
         if (!res || res.l === '' || res.l === undefined) return;
         jugados++;
         if (!pron) return;
-        const r = calcPoints(pron, res, m.phase);
+        const r = calcPoints(pron, res, m.phase, m.id);
         pts += r.pts;
         porFase[m.phase] = (porFase[m.phase] || 0) + r.pts;
         if (r.label === 'exacto')                                        exactos++;

@@ -1103,7 +1103,7 @@ async function updateChip(matchId, pronL, pronV, clasifica) {
 
   if (res && res.l !== '' && res.l !== undefined) {
     const pron = { l: pronL, v: pronV, clasifica: clasifica || '' };
-    const r = CVX.calcPoints(pron, res, phase);
+    const r = CVX.calcPoints(pron, res, phase, matchId);
     resDiv.innerHTML = `<strong>Resultado: ${res.l}–${res.v}${res.clasifica ? ' (clasifica '+res.clasifica+')' : ''}</strong>`;
     if (r.label === 'exacto')
       chip.innerHTML = `<span class="result-chip rc-exact">⚡ Exacto +${r.pts} pts</span>`;
@@ -1168,7 +1168,7 @@ function _updateChipSync(matchId, pronL, pronV, clasifica, resultados) {
   const phase = m ? m.phase : 'grupo';
   if (res && res.l !== '' && res.l !== undefined) {
     const pron = { l: pronL, v: pronV, clasifica: clasifica || '' };
-    const r = CVX.calcPoints(pron, res, phase);
+    const r = CVX.calcPoints(pron, res, phase, matchId);
     if (resDiv) resDiv.innerHTML = `<strong>Resultado: ${res.l}–${res.v}${res.clasifica ? ' (clasifica '+res.clasifica+')' : ''}</strong>`;
     if (r.label === 'exacto')                          chip.innerHTML = `<span class="result-chip rc-exact">⚡ Exacto +${r.pts} pts</span>`;
     else if (r.label === 'clasificado' || r.label === 'ganador') chip.innerHTML = `<span class="result-chip rc-winner">✓ Acierto +${r.pts} pts</span>`;
@@ -1185,7 +1185,7 @@ function _updateGroupChipsSync(prons, resultados, groups) {
     let pts = 0;
     matches.forEach(m => {
       const p = prons[m.id]; const r = resultados[m.id];
-      if (p && r && r.l !== '' && r.l !== undefined) pts += CVX.calcPoints(p, r, m.phase).pts;
+      if (p && r && r.l !== '' && r.l !== undefined) pts += CVX.calcPoints(p, r, m.phase, m.id).pts;
     });
     const chip = document.getElementById(`gchip-${g}`);
     if (chip) chip.textContent = pts + ' pts';
@@ -1197,7 +1197,7 @@ function _updatePhaseChipsSync(prons, resultados, phases) {
     let pts = 0;
     matches.forEach(m => {
       const p = prons[m.id]; const r = resultados[m.id];
-      if (p && r && r.l !== '' && r.l !== undefined) pts += CVX.calcPoints(p, r, m.phase).pts;
+      if (p && r && r.l !== '' && r.l !== undefined) pts += CVX.calcPoints(p, r, m.phase, m.id).pts;
     });
     const chip = document.getElementById(`fchip-${phaseId}`);
     if (chip) chip.textContent = pts + ' pts';

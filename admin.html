@@ -673,7 +673,7 @@ async function onResChange(matchId) {
   Object.values(prons).forEach(u => {
     const p = u[matchId];
     if (!p) return;
-    const r = CVX.calcPoints(p, resTemp, phase);
+    const r = CVX.calcPoints(p, resTemp, phase, matchId);
     if (r.label === 'exacto') exactos++;
     else if (['ganador','clasificado'].includes(r.label)) aciertos++;
   });
