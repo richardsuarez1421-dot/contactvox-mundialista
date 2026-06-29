@@ -871,6 +871,13 @@ function kickoffToEcuadorTime(kickoffUtc) {
   const d = _ecuDate(kickoffUtc);
   return String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0');
 }
+function kickoffToEcuadorShortDate(kickoffUtc) {
+  if (!kickoffUtc) return '';
+  const d = _ecuDate(kickoffUtc);
+  const dias  = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  return `${dias[d.getUTCDay()]} ${d.getUTCDate()} ${meses[d.getUTCMonth()]}`;
+}
 function kickoffToEcuadorDate(kickoffUtc) {
   if (!kickoffUtc) return '0000-00-00';
   const d = _ecuDate(kickoffUtc);
@@ -888,7 +895,9 @@ function formatDateHeader(ymd) {
 function buildMatchRow(m, bloqueado, resultados, userProns, faseCerrada, bloqueados, now) {
   const fl = CVX.FLAGS[m.local] || '🏳️';
   const fv = CVX.FLAGS[m.visit] || '🏳️';
-  const horaEcu = kickoffToEcuadorTime(m.kickoff) || m.date;
+  const horaEcu = kickoffToEcuadorTime(m.kickoff);
+  const fechaEcu = kickoffToEcuadorShortDate(m.kickoff);
+  const horaLabel = fechaEcu && horaEcu ? `${fechaEcu} · ${horaEcu}` : (horaEcu || m.date || '');
   const isElim = m.phase !== 'grupo';
   const res = resultados && resultados[m.id];
   const tieneResultado = res && res.l !== '' && res.l !== undefined;
@@ -944,7 +953,7 @@ function buildMatchRow(m, bloqueado, resultados, userProns, faseCerrada, bloquea
       <span class="mname">${m.local}</span>
     </div>
     <div class="mcenter">
-      <div class="mhora-row"><span class="mhora">${horaEcu}</span>${m.group ? `<span class="mgrupo-badge">Grupo ${m.group}</span>` : (isElim && m.date ? `<span class="mgrupo-badge" style="color:var(--muted);border-color:rgba(107,145,112,.3);background:rgba(107,145,112,.06)">${m.date}</span>` : '')}</div>
+      <div class="mhora-row"><span class="mhora">${horaLabel}</span>${m.group ? `<span class="mgrupo-badge">Grupo ${m.group}</span>` : ''}</div>
       <div class="msede">${m.sede}</div>
       <div class="score-row-inp">
         <input class="sin" type="number" min="0" max="20" id="pl-${m.id}" placeholder="—" value="${pronL}"
