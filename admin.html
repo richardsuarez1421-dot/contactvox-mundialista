@@ -1088,6 +1088,7 @@ async function toggleFase(phaseId, action) {
 
   if (!confirm(confirmMsg)) return;
 
+  try { const u = firebase.auth().currentUser; if (u) CVX.setRestToken(await u.getIdToken(true)); } catch(e) {}
   const fn = action === 'cerrarFase' ? CVX.cerrarFase : CVX.habilitarFase;
   toast('⏳ Actualizando...');
   const r = await fn(phaseId);
