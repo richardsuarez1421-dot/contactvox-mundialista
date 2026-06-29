@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Guía de Puntuación — Copa Mundial Contactvox 2026</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --verde: #00C853;
+    --verde-d: #00a844;
+    --oro: #FFD700;
+    --dark: #0a1a0f;
+    --card: #0f2318;
+    --card2: #152d1e;
+    --text: #e8f5e9;
+    --muted: #6b9170;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 32px 40px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid var(--verde);
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+  }
+  .header-left { }
+  .stag {
+    font-family: 'Oswald', sans-serif;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--verde);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .stag::before { content: ''; display: inline-block; width: 24px; height: 2px; background: var(--verde); }
+  .title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    letter-spacing: 2px;
+    color: #fff;
+    line-height: 1;
+  }
+  .subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .logo-badge {
+    background: var(--verde);
+    color: #000;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 1px;
+    padding: 8px 16px;
+    border-radius: 8px;
+  }
+
+  /* INTRO BOX */
+  .intro-box {
+    background: var(--card);
+    border: 1px solid rgba(0,200,83,.3);
+    border-left: 4px solid var(--verde);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.7;
+  }
+  .intro-box strong { color: var(--verde); font-weight: 600; }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2.5px;
+    color: var(--verde);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    margin-top: 24px;
+    border-bottom: 1px solid rgba(0,200,83,.2);
+    padding-bottom: 6px;
+  }
+
+  /* PUNTOS TABLE */
+  .puntos-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .puntos-card {
+    background: var(--card);
+    border: 1px solid rgba(0,200,83,.15);
+    border-radius: 8px;
+    padding: 10px 8px;
+    text-align: center;
+  }
+  .puntos-card .fase-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .puntos-card .pts-exacto {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    color: var(--verde);
+    line-height: 1;
+  }
+  .puntos-card .pts-label {
+    font-size: 8px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .puntos-card .pts-clasif {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    color: var(--oro);
+    margin-top: 4px;
+    line-height: 1;
+  }
+  .puntos-card .pts-clasif-label {
+    font-size: 8px;
+    color: var(--muted);
+  }
+
+  /* RULE NOTE */
+  .rule-note {
+    background: rgba(255,215,0,.05);
+    border: 1px solid rgba(255,215,0,.2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #c8e6c9;
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+  .rule-note strong { color: var(--oro); }
+
+  /* SCENARIOS */
+  .scenarios { display: flex; flex-direction: column; gap: 10px; }
+
+  .scenario {
+    background: var(--card);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 10px;
+    padding: 12px 16px;
+    display: grid;
+    grid-template-columns: 1fr 72px;
+    gap: 12px;
+    align-items: center;
+  }
+  .scenario.exacto { border-left: 3px solid var(--verde); }
+  .scenario.clasif { border-left: 3px solid var(--oro); }
+  .scenario.fallo  { border-left: 3px solid #ff1744; }
+
+  .sc-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .sc-badge {
+    font-family: 'Oswald', sans-serif;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+  .sc-badge.exacto { background: rgba(0,200,83,.15); color: var(--verde); border: 1px solid rgba(0,200,83,.3); }
+  .sc-badge.clasif { background: rgba(255,215,0,.12); color: var(--oro); border: 1px solid rgba(255,215,0,.3); }
+  .sc-badge.fallo  { background: rgba(255,23,68,.1); color: #ff6b6b; border: 1px solid rgba(255,23,68,.3); }
+
+  .sc-title { font-size: 12px; font-weight: 600; color: var(--text); }
+  .sc-rows { display: flex; flex-direction: column; gap: 3px; }
+  .sc-row { font-size: 11px; color: var(--muted); }
+  .sc-row span { color: var(--text); font-weight: 500; }
+  .sc-note { font-size: 10px; color: rgba(107,145,112,.7); margin-top: 4px; font-style: italic; }
+
+  .pts-display { text-align: center; }
+  .pts-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    line-height: 1;
+  }
+  .pts-num.exacto { color: var(--verde); }
+  .pts-num.clasif { color: var(--oro); }
+  .pts-num.fallo  { color: #ff1744; }
+  .pts-unit { font-size: 10px; color: var(--muted); font-family: 'Oswald', sans-serif; letter-spacing: 1px; }
+  .pts-phase { font-size: 9px; color: rgba(107,145,112,.5); margin-top: 2px; }
+
+  /* REGLA CLASIFICA */
+  .clasifica-rule {
+    background: var(--card2);
+    border: 1px solid rgba(0,200,83,.15);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-top: 20px;
+  }
+  .clasifica-rule h3 {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--verde);
+    margin-bottom: 10px;
+  }
+  .cr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .cr-case {
+    background: rgba(0,0,0,.2);
+    border-radius: 6px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255,255,255,.06);
+  }
+  .cr-case h4 {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--verde);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .cr-case p { font-size: 11px; color: #c8e6c9; line-height: 1.5; }
+
+  /* FOOTER */
+  .footer {
+    margin-top: 28px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(0,200,83,.15);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  /* PRINT */
+  @media print {
+    body { background: #fff; color: #111; padding: 20px 28px; }
+    :root {
+      --verde: #007a30;
+      --verde-d: #005c22;
+      --oro: #b8860b;
+      --dark: #fff;
+      --card: #f4faf6;
+      --card2: #eef7f2;
+      --text: #111;
+      --muted: #5a7a60;
+    }
+    .header { border-bottom: 2px solid #007a30; }
+    .logo-badge { background: #007a30; }
+    .sc-badge.exacto { background: #d4f5e0; color: #007a30; border-color: #007a30; }
+    .sc-badge.clasif { background: #fff3cd; color: #b8860b; border-color: #b8860b; }
+    .sc-badge.fallo  { background: #fde8e8; color: #c0392b; border-color: #c0392b; }
+    .pts-num.exacto { color: #007a30; }
+    .pts-num.clasif { color: #b8860b; }
+    .pts-num.fallo  { color: #c0392b; }
+    .scenario.exacto { border-left-color: #007a30; }
+    .scenario.clasif { border-left-color: #b8860b; }
+    .scenario.fallo  { border-left-color: #c0392b; }
+    .intro-box { border-left-color: #007a30; }
+    .puntos-card .pts-exacto { color: #007a30; }
+    .puntos-card .pts-clasif { color: #b8860b; }
+    .stag { color: #007a30; }
+    .stag::before { background: #007a30; }
+    .section-title { color: #007a30; border-bottom-color: #007a30; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="stag">Sistema de puntuación</div>
+    <div class="title">GUÍA DE PUNTUACIÓN</div>
+    <div class="subtitle">Copa Mundial Contactvox 2026 — Fases Eliminatorias</div>
+  </div>
+  <div class="logo-badge">CVX 2026</div>
+</div>
+
+<!-- INTRO -->
+<div class="intro-box">
+  En fases eliminatorias pronosticas <strong>dos cosas</strong>: el <strong>marcador del partido</strong> y <strong>quién clasifica</strong> a la siguiente ronda.
+  El <strong>clasificado es lo que determina si ganas o pierdes puntos</strong> — si fallas quién avanza, son 0 puntos aunque hayas acertado el marcador.
+  El marcador exacto solo suma puntos adicionales si también acertaste el clasificado.
+</div>
+
+<!-- PUNTOS POR FASE -->
+<div class="section-title">Puntos por fase</div>
+<div class="puntos-grid">
+  <div class="puntos-card">
+    <div class="fase-label">16avos</div>
+    <div class="pts-exacto">6</div>
+    <div class="pts-label">marcador exacto<br>+ clasificado</div>
+    <div class="pts-clasif">3</div>
+    <div class="pts-clasif-label">solo clasificado</div>
+  </div>
+  <div class="puntos-card">
+    <div class="fase-label">Octavos</div>
+    <div class="pts-exacto">7</div>
+    <div class="pts-label">marcador exacto<br>+ clasificado</div>
+    <div class="pts-clasif">3</div>
+    <div class="pts-clasif-label">solo clasificado</div>
+  </div>
+  <div class="puntos-card">
+    <div class="fase-label">Cuartos</div>
+    <div class="pts-exacto">8</div>
+    <div class="pts-label">marcador exacto<br>+ clasificado</div>
+    <div class="pts-clasif">4</div>
+    <div class="pts-clasif-label">solo clasificado</div>
+  </div>
+  <div class="puntos-card">
+    <div class="fase-label">Semis</div>
+    <div class="pts-exacto">9</div>
+    <div class="pts-label">marcador exacto<br>+ clasificado</div>
+    <div class="pts-clasif">4</div>
+    <div class="pts-clasif-label">solo clasificado</div>
+  </div>
+  <div class="puntos-card">
+    <div class="fase-label">3er Puesto</div>
+    <div class="pts-exacto">8</div>
+    <div class="pts-label">marcador exacto<br>+ clasificado</div>
+    <div class="pts-clasif">4</div>
+    <div class="pts-clasif-label">solo clasificado</div>
+  </div>
+  <div class="puntos-card">
+    <div class="fase-label">Final</div>
+    <div class="pts-exacto">12</div>
+    <div class="pts-label">marcador exacto<br>+ campeón</div>
+    <div class="pts-clasif">6</div>
+    <div class="pts-clasif-label">solo campeón</div>
+  </div>
+</div>
+
+<!-- RULE NOTE -->
+<div class="rule-note">
+  <strong>Regla del clasificado en empates:</strong> si el marcador que pusiste es empate (0-0, 1-1, 2-2...), se usa el selector "¿Quién clasifica?" para saber a quién apostaste que avanzaría por penales.
+  Si el marcador no es empate, el equipo que va ganando clasifica automáticamente y el selector no se usa.
+</div>
+
+<!-- SCENARIOS -->
+<div class="section-title">Escenarios posibles — ejemplo con Brasil vs Japón (16avos)</div>
+<div class="scenarios">
+
+  <!-- 1 exacto sin penales -->
+  <div class="scenario exacto">
+    <div>
+      <div class="sc-top">
+        <span class="sc-badge exacto">exacto + clasificado</span>
+        <span class="sc-title">Marcador exacto sin penales</span>
+      </div>
+      <div class="sc-rows">
+        <div class="sc-row">Tu apuesta: <span>Brasil 2-1 Japón, clasifica Brasil</span></div>
+        <div class="sc-row">Resultado: <span>Brasil 2-1 Japón</span> (Brasil gana directo, sin penales)</div>
+      </div>
+      <div class="sc-note">Brasil ganó, el selector coincide y el marcador es exacto.</div>
+    </div>
+    <div class="pts-display">
+      <div class="pts-num exacto">6</div>
+      <div class="pts-unit">PTS</div>
+      <div class="pts-phase">16avos</div>
+    </div>
+  </div>
+
+  <!-- 2 exacto con penales -->
+  <div class="scenario exacto">
+    <div>
+      <div class="sc-top">
+        <span class="sc-badge exacto">exacto + clasificado</span>
+        <span class="sc-title">Marcador exacto con penales (empate)</span>
+      </div>
+      <div class="sc-rows">
+        <div class="sc-row">Tu apuesta: <span>Brasil 0-0 Japón, clasifica Brasil</span></div>
+        <div class="sc-row">Resultado: <span>0-0 en 90 min → Brasil gana por penales</span></div>
+      </div>
+      <div class="sc-note">Acertaste el 0-0 exacto Y que Brasil clasifica por penales. Máximo puntaje.</div>
+    </div>
+    <div class="pts-display">
+      <div class="pts-num exacto">6</div>
+      <div class="pts-unit">PTS</div>
+      <div class="pts-phase">16avos</div>
+    </div>
+  </div>
+
+  <!-- 3 clasif sin penales -->
+  <div class="scenario clasif">
+    <div>
+      <div class="sc-top">
+        <span class="sc-badge clasif">solo clasificado</span>
+        <span class="sc-title">Clasificado correcto, marcador incorrecto (sin penales)</span>
+      </div>
+      <div class="sc-rows">
+        <div class="sc-row">Tu apuesta: <span>Brasil 2-1 Japón, clasifica Brasil</span></div>
+        <div class="sc-row">Resultado: <span>Brasil 3-0 Japón</span> (marcador diferente)</div>
+      </div>
+      <div class="sc-note">El marcador no coincide, pero acertaste que Brasil avanza.</div>
+    </div>
+    <div class="pts-display">
+      <div class="pts-num clasif">3</div>
+      <div class="pts-unit">PTS</div>
+      <div class="pts-phase">16avos</div>
+    </div>
+  </div>
+
+  <!-- 4 clasif con penales -->
+  <div class="scenario clasif">
+    <div>
+      <div class="sc-top">
+        <span class="sc-badge clasif">solo clasificado</span>
+        <span class="sc-title">Clasificado correcto, marcador incorrecto (con penales)</span>
+      </div>
+      <div class="sc-rows">
+        <div class="sc-row">Tu apuesta: <span>Brasil 1-1 Japón, clasifica Brasil</span></div>
+        <div class="sc-row">Resultado: <span>0-0 en 90 min → Brasil gana por penales</span></div>
+      </div>
+      <div class="sc-note">Pusiste empate 1-1, salió 0-0 — marcador incorrecto. Pero Brasil clasificó como apostaste.</div>
+    </div>
+    <div class="pts-display">
+      <div class="pts-num clasif">3</div>
+      <div class="pts-unit">PTS</div>
+      <div class="pts-phase">16avos</div>
+    </div>
+  </div>
+
+  <!-- 5 fallo con marcador exacto -->
+  <div class="scenario fallo">
+    <div>
+      <div class="sc-top">
+        <span class="sc-badge fallo">0 puntos</span>
+        <span class="sc-title">Marcador exacto pero clasificado incorrecto (con penales)</span>
+      </div>
+      <div class="sc-rows">
+        <div class="sc-row">Tu apuesta: <span>Brasil 0-0 Japón, clasifica Japón</span></div>
+        <div class="sc-row">Resultado: <span>0-0 en 90 min → Brasil gana por penales</span></div>
+      </div>
+      <div class="sc-note">Acertaste el 0-0 exacto pero fallaste quién clasifica. El clasificado manda — 0 puntos.</div>
+    </div>
+    <div class="pts-display">
+      <div class="pts-num fallo">0</div>
+      <div class="pts-unit">PTS</div>
+      <div class="pts-phase">—</div>
+    </div>
+  </div>
+
+  <!-- 6 fallo completo -->
+  <div class="scenario fallo">
+    <div>
+      <div class="sc-top">
+        <span class="sc-badge fallo">0 puntos</span>
+        <span class="sc-title">Clasificado incorrecto (cualquier marcador)</span>
+      </div>
+      <div class="sc-rows">
+        <div class="sc-row">Tu apuesta: <span>Japón 2-0 Brasil, clasifica Japón</span></div>
+        <div class="sc-row">Resultado: <span>Brasil 1-0 Japón</span> (o cualquier resultado con Brasil avanzando)</div>
+      </div>
+      <div class="sc-note">No importa el marcador — si fallas quién clasifica, son 0 puntos siempre.</div>
+    </div>
+    <div class="pts-display">
+      <div class="pts-num fallo">0</div>
+      <div class="pts-unit">PTS</div>
+      <div class="pts-phase">—</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- REGLA DETALLADA -->
+<div class="clasifica-rule">
+  <h3>¿Cómo funciona el selector "¿Quién clasifica?"</h3>
+  <div class="cr-grid">
+    <div class="cr-case">
+      <h4>Marcador no empate</h4>
+      <p>Si pusiste 2-1, 3-0, 1-0, etc., el equipo que va ganando en tu pronóstico clasifica automáticamente. <em>El selector no importa.</em></p>
+    </div>
+    <div class="cr-case">
+      <h4>Marcador empate (0-0, 1-1, 2-2...)</h4>
+      <p>El partido iría a tiempo extra o penales. El selector "¿Quién clasifica?" indica a quién apostaste que ganaría esa definición.</p>
+    </div>
+    <div class="cr-case">
+      <h4>Resultado oficial no empate</h4>
+      <p>Si el resultado real es 2-1, el clasificado oficial es el equipo ganador. Se compara con tu clasificado implícito o del selector.</p>
+    </div>
+    <div class="cr-case">
+      <h4>Resultado oficial empate (penales)</h4>
+      <p>El admin ingresa el 0-0 y marca quién clasificó vía penales. Ese dato se compara con tu selector.</p>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <span>Copa Mundial Contactvox 2026</span>
+  <span>Puntuación definida antes del inicio del torneo — aplica a todas las fases eliminatorias</span>
+</div>
+
+</body>
+</html>
