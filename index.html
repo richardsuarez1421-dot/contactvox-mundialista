@@ -828,6 +828,37 @@ async function renderGrupos() {
   const userProns = (currentUser && pronosticos[currentUser.id]) || {};
   const now = Date.now();
 
+  // Total pts para el chip del encabezado
+  let totalPts = 0;
+  CVX.MATCHES_GRUPOS.forEach(m => {
+    const p = userProns[m.id]; const r = resultados[m.id];
+    if (p && r && r.l !== '' && r.l !== undefined) totalPts += CVX.calcPoints(p, r, m.phase, m.id).pts;
+  });
+
+  const estadoTexto = faseGrupo.cerrada ? 'Terminada' : (faseGrupo.habilitada ? 'En curso' : 'No habilitada');
+  const estadoIcon  = faseGrupo.cerrada ? '✅' : (faseGrupo.habilitada ? '🟢' : '🔒');
+
+  // Acordeón — cerrado por defecto
+  const acc = document.createElement('div');
+  acc.className = 'fase-acc';
+  acc.id = 'acc-grupo';
+  acc.innerHTML = `
+    <div class="fase-hdr" id="hdr-grupo" onclick="toggleGrupos()">
+      <div class="fase-title-row">
+        <div class="fase-icon-big">⚽</div>
+        <div class="fase-info-col">
+          <div class="fase-label-name">Fase de Grupos</div>
+          <div class="fase-locked-sub">${CVX.MATCHES_GRUPOS.length} partidos</div>
+        </div>
+      </div>
+      <div class="fase-meta-row">
+        <span class="fase-pts-chip" id="fchip-grupo">${totalPts} pts</span>
+        <span style="font-size:10px;color:var(--muted);padding:4px 8px;background:rgba(0,200,83,.08);border-radius:6px">${estadoIcon} ${estadoTexto}</span>
+        <span class="acc-arrow">▼</span>
+      </div>
+    </div>
+    <div class="fase-body" id="fbody-grupo"></div>`;
+
   // Agrupar partidos por fecha Ecuador (YYYY-MM-DD)
   const byDate = {};
   CVX.MATCHES_GRUPOS.forEach(m => {
@@ -836,6 +867,7 @@ async function renderGrupos() {
     byDate[ymd].push(m);
   });
 
+  const body = acc.querySelector('#fbody-grupo');
   Object.keys(byDate).sort().forEach(ymd => {
     const matches = byDate[ymd].slice().sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
 
@@ -852,10 +884,22 @@ async function renderGrupos() {
     matchesDiv.innerHTML = matches.map(m => buildMatchRow(m, faseBloqueada, resultados, userProns, faseGrupo.cerrada, bloqueados, now)).join('');
     dayDiv.appendChild(matchesDiv);
 
-    container.appendChild(dayDiv);
+    body.appendChild(dayDiv);
   });
+
+  container.appendChild(acc);
   container.dataset.loaded = 'true';
   applyTwemoji(container);
+}
+
+function toggleGrupos() {
+  const body = document.getElementById('fbody-grupo');
+  const hdr  = document.getElementById('hdr-grupo');
+  if (!body) return;
+  const isOpen = body.classList.toggle('open');
+  if (hdr) hdr.classList.toggle('open', isOpen);
+  const arr = hdr && hdr.querySelector('.acc-arrow');
+  if (arr) arr.style.transform = isOpen ? 'rotate(180deg)' : '';
 }
 
 // Construye la tarjeta de partido.
@@ -1210,6 +1254,16 @@ function _updateGroupChipsSync(prons, resultados, groups) {
     const chip = document.getElementById(`gchip-${g}`);
     if (chip) chip.textContent = pts + ' pts';
   });
+  // Actualizar chip total del acordeón de grupos
+  const totalChip = document.getElementById('fchip-grupo');
+  if (totalChip) {
+    let total = 0;
+    CVX.MATCHES_GRUPOS.forEach(m => {
+      const p = prons[m.id]; const r = resultados[m.id];
+      if (p && r && r.l !== '' && r.l !== undefined) total += CVX.calcPoints(p, r, m.phase, m.id).pts;
+    });
+    totalChip.textContent = total + ' pts';
+  }
 }
 function _updatePhaseChipsSync(prons, resultados, phases) {
   phases.forEach(phaseId => {
