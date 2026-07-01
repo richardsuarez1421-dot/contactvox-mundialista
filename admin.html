@@ -76,12 +76,17 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(6,12,7,.95);
 .rimpact{font-size:10px;color:var(--verde);margin-top:4px;font-weight:600}
 
 /* ── CAMPO CLASIFICA ADMIN (eliminatoria) ── */
-.adm-clasifica{margin-top:7px;padding:5px 10px;background:rgba(255,143,0,.06);border:1px solid rgba(255,143,0,.2);border-radius:7px;display:none}
+.adm-clasifica{margin-top:7px;padding:5px 10px;background:rgba(0,200,83,.04);border:1px solid rgba(0,200,83,.15);border-radius:7px;display:none}
 .adm-clasifica.visible{display:block}
-.adm-clasifica-label{font-size:9px;letter-spacing:1px;color:var(--amber);text-transform:uppercase;font-weight:700;margin-bottom:4px}
+.adm-clasifica.penales{background:rgba(255,143,0,.06);border-color:rgba(255,143,0,.2)}
+.adm-clasifica-label{font-size:9px;letter-spacing:1px;color:var(--verde);text-transform:uppercase;font-weight:700;margin-bottom:4px}
+.adm-clasifica.penales .adm-clasifica-label{color:var(--amber)}
+.adm-clasifica-note{font-size:9px;color:var(--muted);text-align:center;margin-top:3px}
+.adm-clasifica.penales .adm-clasifica-note{color:var(--amber)}
 .adm-clasifica-opts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .adm-clasifica-opts label{display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;color:#c8e6c9}
-.adm-clasifica-opts input[type=radio]{accent-color:var(--amber)}
+.adm-clasifica-opts input[type=radio]{accent-color:var(--verde)}
+.adm-clasifica.penales .adm-clasifica-opts input[type=radio]{accent-color:var(--amber)}
 
 .save-res-btn{width:100%;margin-top:10px;background:var(--amber);color:#000;border:none;border-radius:8px;padding:9px;font-family:'Oswald';font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:transform .15s,box-shadow .15s}
 .save-res-btn:hover{transform:scale(1.02);box-shadow:0 4px 16px rgba(255,143,0,.3)}
@@ -575,19 +580,33 @@ function buildAdminMatchRow(m, resultados, pronosticos, bloqueados) {
     lockBtnHtml = `<button class="adm-lock-btn open" onclick="toggleMatchLock('${m.id}', true)" title="Bloquear manualmente">🔓 Abierto · Bloquear ya</button>`;
   }
 
-  // Si ya hay resultado guardado con empate, restaurar el campo clasifica
+  // Para elim: siempre mostrar quién clasificó. Si no hay empate, auto-detectar del marcador.
+  // Si hay empate (penales), requerir selección manual.
+  let autoClasifica = '';
+  if (isElim && res.l !== undefined && res.l !== '') {
+    if (String(res.l) !== String(res.v)) {
+      autoClasifica = parseInt(res.l) > parseInt(res.v) ? 'local' : 'visit';
+    } else {
+      autoClasifica = res.clasifica || '';
+    }
+  }
   const resEmpate = isElim && res.l !== undefined && res.l !== '' && String(res.l) === String(res.v);
-  const clasVisible = resEmpate ? 'visible' : '';
-  const clasLocalChecked = res.clasifica === 'local' ? 'checked' : '';
-  const clasVisitChecked = res.clasifica === 'visit' ? 'checked' : '';
+  const clasVisible  = isElim ? 'visible' : '';
+  const clasPenales  = resEmpate ? 'penales' : '';
+  const clasNoteText = !setSt ? 'Ingresa el marcador primero' :
+                       resEmpate ? '⚠️ Penales — selecciona quién clasificó' :
+                       'Auto-detectado del marcador';
+  const clasLocalChecked = autoClasifica === 'local' ? 'checked' : '';
+  const clasVisitChecked = autoClasifica === 'visit' ? 'checked' : '';
 
   const clasificaField = isElim ? `
-    <div class="adm-clasifica ${clasVisible}" id="adm-cls-row-${m.id}">
+    <div class="adm-clasifica ${clasVisible} ${clasPenales}" id="adm-cls-row-${m.id}">
       <div class="adm-clasifica-label">¿Quién clasificó?</div>
       <div class="adm-clasifica-opts">
         <label><input type="radio" name="adm-cls-${m.id}" value="local" ${clasLocalChecked}> ${fl} ${m.local}</label>
         <label><input type="radio" name="adm-cls-${m.id}" value="visit" ${clasVisitChecked}> ${fv} ${m.visit}</label>
       </div>
+      <div class="adm-clasifica-note" id="adm-cls-note-${m.id}">${clasNoteText}</div>
     </div>` : '';
 
   // Admin siempre puede ingresar resultados — el bloqueo solo aplica a pronósticos de usuarios
@@ -647,17 +666,23 @@ async function onResChange(matchId) {
   const phase = m ? m.phase : 'grupo';
   const isElim = phase !== 'grupo';
 
-  // Mostrar/ocultar campo clasifica para eliminatoria según si hay empate
+  // Actualizar campo clasifica para eliminatoria
   if (isElim) {
-    const clsRow = document.getElementById(`adm-cls-row-${matchId}`);
+    const clsRow  = document.getElementById(`adm-cls-row-${matchId}`);
+    const noteEl  = document.getElementById(`adm-cls-note-${matchId}`);
+    const radios  = document.querySelectorAll(`input[name="adm-cls-${matchId}"]`);
     if (clsRow) {
       if (String(l) === String(v)) {
-        clsRow.classList.add('visible');
-      } else {
-        clsRow.classList.remove('visible');
-        // Deseleccionar radios si no hay empate (el clasificado se detecta automáticamente)
-        const radios = document.querySelectorAll(`input[name="adm-cls-${matchId}"]`);
+        // Empate → penales: limpiar selección, exigir entrada manual
+        clsRow.classList.add('penales');
         radios.forEach(r => r.checked = false);
+        if (noteEl) noteEl.textContent = '⚠️ Penales — selecciona quién clasificó';
+      } else {
+        // No empate: auto-seleccionar ganador del marcador
+        clsRow.classList.remove('penales');
+        const winner = parseInt(l) > parseInt(v) ? 'local' : 'visit';
+        radios.forEach(r => r.checked = (r.value === winner));
+        if (noteEl) noteEl.textContent = 'Auto-detectado del marcador';
       }
     }
   }
@@ -666,8 +691,10 @@ async function onResChange(matchId) {
   const prons = await CVX.getPronosticos();
   let exactos = 0, aciertos = 0;
 
-  // Para el impacto, usamos clasifica='local' como fallback temporal si hay empate
-  const clasifica = String(l) === String(v) ? (_getAdmClasifica(matchId) || 'local') : '';
+  // Para el impacto, determinar clasificado real: auto para no-empate, seleccionado para empate
+  const esEmpate = String(l) === String(v);
+  const clasifica = esEmpate ? (_getAdmClasifica(matchId) || 'local')
+                              : (parseInt(l) > parseInt(v) ? 'local' : 'visit');
   const resTemp = { l, v, clasifica };
 
   Object.values(prons).forEach(u => {
@@ -852,11 +879,9 @@ async function saveElimResults(phaseId) {
     const v = document.getElementById(`rv-${m.id}`)?.value;
     if (l === '' || v === '') return;
 
-    // Si hay empate, se requiere clasifica
-    let clasifica = null;
-    if (String(l) === String(v)) {
-      clasifica = _getAdmClasifica(m.id);
-    }
+    // Siempre guardar clasifica para elim: auto-detectado si no hay empate, manual si penales
+    const clasifica = _getAdmClasifica(m.id)
+      || (String(l) !== String(v) ? (parseInt(l) > parseInt(v) ? 'local' : 'visit') : null);
     saves.push(CVX.saveResultado(m.id, l, v, clasifica || undefined));
   });
   toast('⏳ Guardando...');
