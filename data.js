@@ -695,8 +695,20 @@ const CVX = (() => {
   }
 
   async function saveEquiposElim(body) {
-    if (!body.matchId) return null;
     try {
+      if (body.equipos && Array.isArray(body.equipos)) {
+        // modo batch: array de { matchId, local, visit }
+        await Promise.all(body.equipos.map(e => {
+          if (!e.matchId) return null;
+          return fbSet(`equiposElim/${e.matchId}`, {
+            local: e.local || '',
+            visit: e.visit || '',
+          });
+        }));
+        invalidateCache();
+        return { ok: true };
+      }
+      if (!body.matchId) return null;
       await fbSet(`equiposElim/${body.matchId}`, {
         local: body.local || '',
         visit: body.visit || '',
