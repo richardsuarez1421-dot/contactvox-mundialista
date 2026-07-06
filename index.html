@@ -141,7 +141,7 @@ h2.stitle{font-family:'Bebas Neue';font-size:clamp(30px,5vw,50px);letter-spacing
 .mflag{font-size:22px;flex-shrink:0;line-height:1}
 img.emoji{height:1em;width:1em;vertical-align:-0.1em;display:inline-block}
 .mname{font-size:13px;font-weight:600;color:#fff}
-.mcenter{text-align:center;min-width:120px}
+.mcenter{text-align:center;min-width:0}
 .mhora-row{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:5px}
 .mhora{font-size:11px;font-weight:700;color:var(--text);letter-spacing:.5px}
 .mgrupo-badge{font-size:9px;font-weight:700;color:var(--verde);background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.25);border-radius:50px;padding:1px 7px;letter-spacing:.5px}
@@ -325,7 +325,29 @@ footer .fg{color:var(--verde);font-weight:600}
     align-items: center;
     gap: 6px;
   }
+  .msede { white-space:normal; max-width:100%; }
+  .sin { height:44px; }
+  .match-save-btn { padding:10px 14px; min-height:44px; }
+  .match-edit-btn { padding:10px 12px; min-height:44px; }
+  .esp-card input, .field input, .field select { font-size:16px; }
+  .hbtns { flex-direction:column; align-items:center; }
+  .btn-p, .btn-o { width:100%; max-width:280px; text-align:center; }
+  .section { padding:48px 16px; }
+  #pronosticos-section .inner { padding:0 12px; }
 }
+@media(max-width:480px) {
+  .fase-meta-row { flex-wrap:wrap; gap:6px; }
+  .fase-pts-chip { font-size:11px; padding:2px 8px; }
+  .fase-hdr { padding:12px 14px; }
+  .fase-icon-big { font-size:20px; width:26px; }
+  .fase-label-name { font-size:13px; }
+  .rk-hdr, .rk-row { grid-template-columns:36px 1fr 54px; }
+  .rk-phase-bar { display:none; }
+  .podio { flex-direction:column; align-items:center; }
+  .pcard { max-width:100%; }
+  .score-grid { grid-template-columns:1fr; }
+}
+#pop blockquote { word-break:break-word; overflow-wrap:break-word; }
 </style>
 </head>
 <body>
