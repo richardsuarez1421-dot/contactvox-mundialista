@@ -212,14 +212,14 @@ const CVX = (() => {
     { id:'QF6', phase:'octavos',  group:null, local:'Estados Unidos', visit:'Bélgica',    date:'Lun 6 Jul', sede:'Lumen Field, Seattle',               kickoff:'2026-07-07T00:00:00Z' },
     { id:'QF7', phase:'octavos',  group:null, local:'Argentina',      visit:'Egipto',     date:'Mar 7 Jul', sede:'Mercedes-Benz Stadium, Atlanta',     kickoff:'2026-07-07T16:00:00Z' },
     { id:'QF8', phase:'octavos',  group:null, local:'Suiza',          visit:'Colombia',   date:'Mar 7 Jul', sede:'NRG Stadium, Houston',               kickoff:'2026-07-07T20:00:00Z' },
-    { id:'SF1', phase:'cuartos',  group:null, local:'Gan. QF1', visit:'Gan. QF2', date:'Sáb 11 Jul', sede:'Por confirmar', kickoff:'2026-07-11T20:00:00Z' },
-    { id:'SF2', phase:'cuartos',  group:null, local:'Gan. QF3', visit:'Gan. QF4', date:'Sáb 11 Jul', sede:'Por confirmar', kickoff:'2026-07-11T23:00:00Z' },
-    { id:'SF3', phase:'cuartos',  group:null, local:'Gan. QF5', visit:'Gan. QF6', date:'Dom 12 Jul', sede:'Por confirmar', kickoff:'2026-07-12T20:00:00Z' },
-    { id:'SF4', phase:'cuartos',  group:null, local:'Gan. QF7', visit:'Gan. QF8', date:'Dom 12 Jul', sede:'Por confirmar', kickoff:'2026-07-12T23:00:00Z' },
-    { id:'NF1', phase:'semis',    group:null, local:'Gan. SF1', visit:'Gan. SF2', date:'Mié 15 Jul', sede:'Por confirmar', kickoff:'2026-07-15T20:00:00Z' },
-    { id:'NF2', phase:'semis',    group:null, local:'Gan. SF3', visit:'Gan. SF4', date:'Jue 16 Jul', sede:'Por confirmar', kickoff:'2026-07-16T20:00:00Z' },
-    { id:'3P1', phase:'tercero',  group:null, local:'Per. NF1', visit:'Per. NF2', date:'Dom 19 Jul', sede:'Por confirmar', kickoff:'2026-07-19T19:00:00Z' },
-    { id:'FIN', phase:'final',    group:null, local:'Gan. NF1', visit:'Gan. NF2', date:'Dom 19 Jul', sede:'MetLife Stadium, NJ', kickoff:'2026-07-19T22:00:00Z' },
+    { id:'SF1', phase:'cuartos',  group:null, local:'Marruecos',  visit:'Francia',    date:'Jue 9 Jul',  sede:'Por confirmar',        kickoff:'2026-07-09T20:00:00Z' },
+    { id:'SF2', phase:'cuartos',  group:null, local:'Noruega',    visit:'Inglaterra', date:'Sáb 11 Jul', sede:'Por confirmar',        kickoff:'2026-07-11T21:00:00Z' },
+    { id:'SF3', phase:'cuartos',  group:null, local:'Gan. QF5',   visit:'Gan. QF6',   date:'Vie 10 Jul', sede:'Por confirmar',        kickoff:'2026-07-10T19:00:00Z' },
+    { id:'SF4', phase:'cuartos',  group:null, local:'Gan. QF7',   visit:'Gan. QF8',   date:'Sáb 11 Jul', sede:'Por confirmar',        kickoff:'2026-07-12T01:00:00Z' },
+    { id:'NF1', phase:'semis',    group:null, local:'Gan. SF1',   visit:'Gan. SF2',   date:'Mar 14 Jul', sede:'Por confirmar',        kickoff:'2026-07-14T19:00:00Z' },
+    { id:'NF2', phase:'semis',    group:null, local:'Gan. SF3',   visit:'Gan. SF4',   date:'Mié 15 Jul', sede:'Por confirmar',        kickoff:'2026-07-15T19:00:00Z' },
+    { id:'3P1', phase:'tercero',  group:null, local:'Per. NF1',   visit:'Per. NF2',   date:'Sáb 18 Jul', sede:'Por confirmar',        kickoff:'2026-07-18T21:00:00Z' },
+    { id:'FIN', phase:'final',    group:null, local:'Gan. NF1',   visit:'Gan. NF2',   date:'Dom 19 Jul', sede:'MetLife Stadium, NJ',  kickoff:'2026-07-19T19:00:00Z' },
   ];
 
   const MATCHES = [...MATCHES_GRUPOS, ...MATCHES_ELIM];
