@@ -523,7 +523,7 @@ footer .fg{color:var(--verde);font-weight:600}
 <script src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="data.js?v=v12"></script>
+<script src="data.js?v=v13"></script>
 <script>
 
 function applyTwemoji(el) {
@@ -1436,7 +1436,8 @@ async function renderElim() {
     const faseData = fases[ph.id] || {};
     const habilitada = faseData.habilitada && !faseData.cerrada;
     const yaGuardo = faseUsuario[ph.id];
-    let matches = CVX.MATCHES_ELIM.filter(m => m.phase === ph.id);
+    let matches = CVX.MATCHES_ELIM.filter(m => m.phase === ph.id)
+      .slice().sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
 
     // Cargar nombres de equipos si están disponibles (equiposElim = { matchId: {local, visit} })
     matches = matches.map(m => {

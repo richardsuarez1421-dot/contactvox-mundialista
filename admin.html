@@ -430,7 +430,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(6,12,7,.95);
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="data.js?v=v12"></script>
+<script src="data.js?v=v13"></script>
 <script>
 // ══ INIT ══
 async function initAdmin() {
@@ -851,7 +851,7 @@ async function renderAdminElim() {
       return (eq && (eq.local || eq.visit))
         ? { ...m, local: eq.local || m.local, visit: eq.visit || m.visit }
         : m;
-    });
+    }).sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
     const loaded = matches.filter(m => {
       const r = resultados[m.id];
       return r && r.l !== '' && r.l !== undefined;
