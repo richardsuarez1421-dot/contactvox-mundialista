@@ -1364,12 +1364,18 @@ async function testApiKey() {
   try {
     const r = await fetch(`${API_BASE}/status`, { headers: { 'x-apisports-key': key } });
     const d = await r.json();
-    if (d.response?.account?.login) {
-      _apiLog(`✅ Conectado como: ${d.response.account.login} · Requests hoy: ${d.response.requests?.current ?? '?'}/${d.response.requests?.limit_day ?? '?'}`, 'ok');
+    const acc = d.response?.account;
+    if (d.errors?.length) {
+      _apiLog(`❌ API key inválida: ${JSON.stringify(d.errors)}`, 'err');
+      toast('❌ API key inválida');
+    } else if (acc) {
+      const nombre = `${acc.firstname || ''} ${acc.lastname || ''}`.trim() || acc.email || '—';
+      const req = d.response.requests;
+      _apiLog(`✅ Conectado como: ${nombre} · Requests hoy: ${req?.current ?? '?'}/${req?.limit_day ?? '?'}`, 'ok');
       toast('✅ API conectada correctamente');
     } else {
       _apiLog('❌ Respuesta inesperada: ' + JSON.stringify(d).slice(0, 120), 'err');
-      toast('❌ API key inválida o error de CORS');
+      toast('❌ Error inesperado — revisa CORS o la key');
     }
   } catch(e) {
     _apiLog('❌ Error de red / CORS: ' + e.message, 'err');
