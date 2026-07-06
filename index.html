@@ -335,6 +335,12 @@ footer .fg{color:var(--verde);font-weight:600}
   .section { padding:48px 16px; }
   #pronosticos-section .inner { padding:0 12px; }
 }
+/* Constrain Twemoji SVG size in accordion status badge (prevents oversized ✅ on mobile) */
+.fase-meta-row img.emoji {
+  height: 12px !important;
+  width: 12px !important;
+  vertical-align: middle;
+}
 @media(max-width:480px) {
   .fase-meta-row { flex-wrap:wrap; gap:6px; }
   .fase-pts-chip { font-size:11px; padding:2px 8px; }
@@ -517,7 +523,7 @@ footer .fg{color:var(--verde);font-weight:600}
 <script src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="data.js?v=v10"></script>
+<script src="data.js?v=v11"></script>
 <script>
 
 function applyTwemoji(el) {
@@ -922,6 +928,7 @@ function toggleGrupos() {
   if (hdr) hdr.classList.toggle('open', isOpen);
   const arr = hdr && hdr.querySelector('.acc-arrow');
   if (arr) arr.style.transform = isOpen ? 'rotate(180deg)' : '';
+  if (isOpen) applyTwemoji(body);
 }
 
 // Construye la tarjeta de partido.
@@ -1513,6 +1520,7 @@ function toggleFase(phaseId) {
   } else {
     body.classList.add('open');
     if (arr) arr.classList.add('open');
+    applyTwemoji(body);
   }
 }
 
