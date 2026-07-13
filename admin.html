@@ -389,7 +389,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(6,12,7,.95);
 
       <div class="ps-title" style="margin-top:8px">⚡ Ingresar resultados eliminatorios</div>
       <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Ingresa el marcador global final (incluye prórroga y penales). Si hay empate en el marcador, aparecerá el campo "¿Quién clasificó?". Los cruces de octavos se calculan automáticamente con las posiciones de los grupos.</p>
-      <button class="save-res-btn" style="margin-bottom:16px" onclick="recalcBracket(false)">🔄 Calcular / actualizar cuadro eliminatorio automáticamente</button>
+      <button class="save-res-btn" style="margin-bottom:8px" onclick="recalcBracket(false)">🔄 Calcular / actualizar cuadro eliminatorio automáticamente</button>
+      <button class="save-res-btn" style="margin-bottom:16px;background:var(--amber);color:#000" onclick="corregirSemisNF()">🧹 Corregir cruces NF1/NF2 y limpiar pronósticos</button>
       <div id="admin-elim-container"></div>
     </div>
 
@@ -430,13 +431,13 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(6,12,7,.95);
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="data.js?v=v14"></script>
+<script src="data.js?v=v15"></script>
 <script>
 // ══ INIT ══
 async function initAdmin() {
-  // Migración única: elimina solo los pronósticos guardados antes de corregir
-  // los cruces NF1/NF2. Los pronósticos nuevos no se ven afectados.
-  await CVX.deletePronosticosAntes(['NF1', 'NF2'], '2026-07-13T17:33:00.000Z');
+  // Elimina pronósticos de NF1/NF2 hechos con los cruces incorrectos
+  // (antes del kickoff de NF1). Los registrados después ya usan el cruce correcto.
+  await CVX.deletePronosticosAntes(['NF1', 'NF2'], '2026-07-14T19:00:00.000Z');
   await renderAdminGrupos();
   await renderAdminElim();
   await refresh();
@@ -1008,6 +1009,22 @@ async function saveEquiposElim(phaseId) {
   toast(`✅ ${equipos.length} equipos guardados`);
   logActivity(`${CVX.PHASES.find(p => p.id === phaseId)?.label || phaseId}: ${equipos.length} equipos cargados`);
   await renderAdminElim();
+}
+
+// Limpieza manual: borra pronósticos de NF1/NF2 guardados antes del kickoff
+// y fuerza recálculo del cuadro con los cruces correctos (Gan.SF1 vs Gan.SF3, etc.)
+async function corregirSemisNF() {
+  if (!confirm('¿Borrar TODOS los pronósticos de NF1 y NF2 y recalcular el cuadro con los cruces correctos?')) return;
+  try {
+    const r = await CVX.deletePronosticosAntes(['NF1', 'NF2'], '2099-01-01T00:00:00.000Z');
+    toast(`🗑 ${r?.deleted ?? 0} pronóstico(s) de NF1/NF2 eliminados`);
+    logActivity(`Limpieza NF1/NF2: ${r?.deleted ?? 0} pronósticos eliminados`);
+    await recalcBracket(false);
+    await refresh();
+  } catch(e) {
+    console.error(e);
+    toast('❌ Error: ' + e.message);
+  }
 }
 
 // Recalcula automáticamente el cuadro eliminatorio (octavos según posiciones

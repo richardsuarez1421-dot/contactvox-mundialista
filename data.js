@@ -216,8 +216,8 @@ const CVX = (() => {
     { id:'SF3', phase:'cuartos',  group:null, local:'Gan. QF5',   visit:'Gan. QF6',   date:'Vie 10 Jul', sede:'Por confirmar',        kickoff:'2026-07-10T19:00:00Z' },
     { id:'SF2', phase:'cuartos',  group:null, local:'Noruega',    visit:'Inglaterra', date:'Sáb 11 Jul', sede:'Por confirmar',        kickoff:'2026-07-11T21:00:00Z' },
     { id:'SF4', phase:'cuartos',  group:null, local:'Gan. QF7',   visit:'Gan. QF8',   date:'Sáb 11 Jul', sede:'Por confirmar',        kickoff:'2026-07-12T01:00:00Z' },
-    { id:'NF1', phase:'semis',    group:null, local:'Francia',    visit:'España',      date:'Mar 14 Jul', sede:'Por confirmar',        kickoff:'2026-07-14T19:00:00Z' },
-    { id:'NF2', phase:'semis',    group:null, local:'Inglaterra', visit:'Argentina',   date:'Mié 15 Jul', sede:'Por confirmar',        kickoff:'2026-07-15T19:00:00Z' },
+    { id:'NF1', phase:'semis',    group:null, local:'Gan. SF1',   visit:'Gan. SF3',    date:'Mar 14 Jul', sede:'Por confirmar',        kickoff:'2026-07-14T19:00:00Z' },
+    { id:'NF2', phase:'semis',    group:null, local:'Gan. SF2',   visit:'Gan. SF4',    date:'Mié 15 Jul', sede:'Por confirmar',        kickoff:'2026-07-15T19:00:00Z' },
     { id:'3P1', phase:'tercero',  group:null, local:'Per. NF1',   visit:'Per. NF2',   date:'Sáb 18 Jul', sede:'Por confirmar',        kickoff:'2026-07-18T21:00:00Z' },
     { id:'FIN', phase:'final',    group:null, local:'Gan. NF1',   visit:'Gan. NF2',   date:'Dom 19 Jul', sede:'MetLife Stadium, NJ',  kickoff:'2026-07-19T19:00:00Z' },
   ];
