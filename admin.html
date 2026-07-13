@@ -435,9 +435,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(6,12,7,.95);
 <script>
 // ══ INIT ══
 async function initAdmin() {
-  // Elimina pronósticos de NF1/NF2 hechos con los cruces incorrectos
-  // (antes del kickoff de NF1). Los registrados después ya usan el cruce correcto.
   await CVX.deletePronosticosAntes(['NF1', 'NF2'], '2026-07-14T19:00:00.000Z');
+  await recalcBracket(true);
   await renderAdminGrupos();
   await renderAdminElim();
   await refresh();
