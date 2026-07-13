@@ -216,8 +216,8 @@ const CVX = (() => {
     { id:'SF3', phase:'cuartos',  group:null, local:'Gan. QF5',   visit:'Gan. QF6',   date:'Vie 10 Jul', sede:'Por confirmar',        kickoff:'2026-07-10T19:00:00Z' },
     { id:'SF2', phase:'cuartos',  group:null, local:'Noruega',    visit:'Inglaterra', date:'Sáb 11 Jul', sede:'Por confirmar',        kickoff:'2026-07-11T21:00:00Z' },
     { id:'SF4', phase:'cuartos',  group:null, local:'Gan. QF7',   visit:'Gan. QF8',   date:'Sáb 11 Jul', sede:'Por confirmar',        kickoff:'2026-07-12T01:00:00Z' },
-    { id:'NF1', phase:'semis',    group:null, local:'Gan. SF1',   visit:'Gan. SF2',   date:'Mar 14 Jul', sede:'Por confirmar',        kickoff:'2026-07-14T19:00:00Z' },
-    { id:'NF2', phase:'semis',    group:null, local:'Gan. SF3',   visit:'Gan. SF4',   date:'Mié 15 Jul', sede:'Por confirmar',        kickoff:'2026-07-15T19:00:00Z' },
+    { id:'NF1', phase:'semis',    group:null, local:'Francia',    visit:'España',      date:'Mar 14 Jul', sede:'Por confirmar',        kickoff:'2026-07-14T19:00:00Z' },
+    { id:'NF2', phase:'semis',    group:null, local:'Inglaterra', visit:'Argentina',   date:'Mié 15 Jul', sede:'Por confirmar',        kickoff:'2026-07-15T19:00:00Z' },
     { id:'3P1', phase:'tercero',  group:null, local:'Per. NF1',   visit:'Per. NF2',   date:'Sáb 18 Jul', sede:'Por confirmar',        kickoff:'2026-07-18T21:00:00Z' },
     { id:'FIN', phase:'final',    group:null, local:'Gan. NF1',   visit:'Gan. NF2',   date:'Dom 19 Jul', sede:'MetLife Stadium, NJ',  kickoff:'2026-07-19T19:00:00Z' },
   ];
@@ -257,6 +257,8 @@ const CVX = (() => {
   let _inflight = null;
   const CACHE_TTL = 30000; // 30s — Firebase es rapido, podemos refrescar mas seguido
   const VALID_MATCH_IDS = new Set(MATCHES.map(m => m.id));
+  const SEMIS_RESET_IDS = new Set(['NF1', 'NF2']);
+  const SEMIS_RESET_CUTOFF = '2026-07-13T17:33:00.000Z';
 
   function hasText(value) {
     return value !== null && value !== undefined && String(value).trim() !== '' && String(value) !== 'undefined';
@@ -454,6 +456,9 @@ const CVX = (() => {
         const v = cleanText(p.v);
         const savedAt = cleanText(p.savedAt);
         if (l === '' || v === '') return;
+        // Ignorar los pronósticos hechos con los cruces de semifinal incorrectos.
+        // Los nuevos registros posteriores a la corrección se conservan.
+        if (SEMIS_RESET_IDS.has(mid) && (!savedAt || savedAt < SEMIS_RESET_CUTOFF)) return;
         if (!pronosticos[uid]) pronosticos[uid] = {};
         const prev = pronosticos[uid][mid];
         if (prev && prev.savedAt && savedAt && prev.savedAt > savedAt) return;
@@ -672,6 +677,33 @@ const CVX = (() => {
       return { ok: true };
     } catch (err) {
       console.error('deleteResultado error:', err);
+      return null;
+    }
+  }
+
+  async function deletePronosticosAntes(matchIds, cutoffIso) {
+    const ids = new Set((matchIds || []).map(cleanText).filter(Boolean));
+    if (!ids.size || !hasText(cutoffIso)) return { ok: true, deleted: 0 };
+    try {
+      const raw = await fbGet('pronosticos');
+      const updates = {};
+      Object.entries(raw || {}).forEach(([userId, matches]) => {
+        if (!matches || typeof matches !== 'object') return;
+        ids.forEach(matchId => {
+          const pron = matches[matchId];
+          if (!pron) return;
+          const savedAt = cleanText(pron.savedAt);
+          if (!savedAt || savedAt < cutoffIso) {
+            updates[`pronosticos/${userId}/${matchId}`] = null;
+          }
+        });
+      });
+      const deleted = Object.keys(updates).length;
+      if (deleted) await fbUpdate('', updates);
+      invalidateCache();
+      return { ok: true, deleted };
+    } catch (err) {
+      console.error('deletePronosticosAntes error:', err);
       return null;
     }
   }
@@ -979,7 +1011,7 @@ const CVX = (() => {
     getUsuarios, getPronosticos, getResultados, getEspeciales,
     getFases, getFaseUsuario, buscarUsuario,
     getCurrentUser, setCurrentUser,
-    saveUsuario, savePronostico, saveResultado, deleteResultado, saveEspecial, saveEquiposElim, bloquearPartido,
+    saveUsuario, savePronostico, saveResultado, deleteResultado, deletePronosticosAntes, saveEspecial, saveEquiposElim, bloquearPartido,
     getBloqueados,
     habilitarFase, cerrarFase,
     buildRanking, computeBracket, groupStandings,

@@ -430,10 +430,13 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(6,12,7,.95);
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="data.js?v=v13"></script>
+<script src="data.js?v=v14"></script>
 <script>
 // ══ INIT ══
 async function initAdmin() {
+  // Migración única: elimina solo los pronósticos guardados antes de corregir
+  // los cruces NF1/NF2. Los pronósticos nuevos no se ven afectados.
+  await CVX.deletePronosticosAntes(['NF1', 'NF2'], '2026-07-13T17:33:00.000Z');
   await renderAdminGrupos();
   await renderAdminElim();
   await refresh();
